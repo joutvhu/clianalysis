@@ -14,12 +14,14 @@ export interface ValueSchema {
     type: 'value';
     name: string;
     index?: number;
+    dataType: string;
 }
 
 export interface ParamSchema {
     type: 'param';
     name: string;
     filters: string | string[];
+    dataType: string;
 }
 
 declare type FlagChildSchema = FlagSchema | DetectSchema | ParamSchema | ValueSchema;
@@ -73,6 +75,20 @@ export class CommandRunner {
         return undefined;
     }
 
+    parse(type: string, value: string) {
+        if (type === 'boolean') {
+            return value != null && ['t', 'true', 'y', 'yes', 'on']
+                .some(v => v === value.toLowerCase());
+        }
+        if (type === 'integer') {
+            return parseInt(value, 10);
+        }
+        if (type === 'number') {
+            return parseFloat(value);
+        }
+        return value;
+    }
+
     analysis(
         result: CommandArgument,
         index: number,
@@ -88,18 +104,14 @@ export class CommandRunner {
                 for (const c of children || []) {
                     if (c.type === 'value') {
                         if (c.index == null || c.index === i) {
-                            // todo: parse value
-                            result.args[c.name] = arg;
+                            result.args[c.name] = this.parse(c.dataType, arg);
                         }
                     } else {
                         const filter = this.findFilter(arg, c.filters, c.type === 'param');
-                        let value: any = undefined;
 
                         if (filter != null) {
                             if (c.type === 'param') {
-                                value = arg.slice(filter.length);
-                                // todo: parse value
-                                result.args[c.name] = value;
+                                result.args[c.name] = this.parse(c.dataType, arg.slice(filter.length));
                             } else if (['task', 'flag', 'detect'].includes(c.type)) {
                                 if (c.type === 'task') {
                                     result.tasks.push(c.name);
