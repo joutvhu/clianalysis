@@ -22,7 +22,7 @@ export interface ParamSchema {
     filters: string | string[];
 }
 
-declare type FlagChildSchema = FlagSchema | ParamSchema | ValueSchema;
+declare type FlagChildSchema = FlagSchema | DetectSchema | ParamSchema | ValueSchema;
 
 export interface FlagSchema {
     type: 'flag';
@@ -31,7 +31,13 @@ export interface FlagSchema {
     children?: FlagChildSchema[];
 }
 
-declare type TaskChildSchema = TaskSchema | FlagSchema | ParamSchema | ValueSchema;
+export interface DetectSchema {
+    type: 'detect';
+    filters: string | string[];
+    children: FlagChildSchema[];
+}
+
+declare type TaskChildSchema = TaskSchema | FlagSchema | DetectSchema | ParamSchema | ValueSchema;
 
 export interface TaskSchema {
     type: 'task';
@@ -90,25 +96,22 @@ export class CommandRunner {
                         let value: any = undefined;
 
                         if (filter != null) {
-                            switch (c.type) {
-                                case 'task':
+                            if (c.type === 'param') {
+                                value = arg.slice(filter.length);
+                                // todo: parse value
+                                result.args[c.name] = value;
+                            } else if (['task', 'flag', 'detect'].includes(c.type)) {
+                                if (c.type === 'task') {
                                     result.tasks.push(c.name);
                                     if (c.impl instanceof Function)
                                         result.impl = c.impl;
-                                    i += this.analysis(result, index + i, c.children);
-                                    break;
-                                case 'flag':
+                                } else if (c.type === 'flag') {
                                     if (c.name.startsWith('!'))
                                         result.args[c.name.slice(1)] = false;
                                     else
                                         result.args[c.name] = true;
-                                    i += this.analysis(result, index + i, c.children);
-                                    break;
-                                case 'param':
-                                    value = arg.slice(filter.length);
-                                    // todo: parse value
-                                    result.args[c.name] = value;
-                                    break;
+                                }
+                                i += this.analysis(result, index + i, c.children);
                             }
                         }
                     }

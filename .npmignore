@@ -272,5 +272,6 @@ Temporary Items
 
 # Source code
 src
+test
 tsconfig.json
 tslint.json
