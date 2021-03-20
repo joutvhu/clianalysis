@@ -1,4 +1,5 @@
-export interface CommandArgument {
+interface CommandArgument {
+    config: CommandSchema;
     argv: string[];
     cwd: string;
     tasks: any[];
@@ -6,42 +7,40 @@ export interface CommandArgument {
     impl?: ImplementFunction;
 }
 
-declare interface ImplementFunction {
-    (option: CommandArgument): void;
-}
+type ImplementFunction = (option: CommandArgument) => void;
 
-export interface ValueSchema {
+interface ValueSchema {
     type: 'value';
     name: string;
     index?: number;
     dataType: string;
 }
 
-export interface ParamSchema {
+interface ParamSchema {
     type: 'param';
     name: string;
     filters: string | string[];
     dataType: string;
 }
 
-declare type FlagChildSchema = FlagSchema | DetectSchema | ParamSchema | ValueSchema;
+type FlagChildSchema = FlagSchema | DetectSchema | ParamSchema | ValueSchema;
 
-export interface FlagSchema {
+interface FlagSchema {
     type: 'flag';
     name: string;
     filters: string | string[];
     children?: FlagChildSchema[];
 }
 
-export interface DetectSchema {
+interface DetectSchema {
     type: 'detect';
     filters: string | string[];
     children: FlagChildSchema[];
 }
 
-declare type TaskChildSchema = TaskSchema | FlagSchema | DetectSchema | ParamSchema | ValueSchema;
+type TaskChildSchema = TaskSchema | FlagSchema | DetectSchema | ParamSchema | ValueSchema;
 
-export interface TaskSchema {
+interface TaskSchema {
     type: 'task';
     name: string;
     filters: string | string[];
@@ -54,18 +53,18 @@ export interface CommandSchema {
     impl?: ImplementFunction;
 }
 
-export class CommandRunner {
+export class CommandExecutor {
     private readonly config: CommandSchema = {};
 
     constructor(config: CommandSchema) {
         this.config = config;
     }
 
-    static of(config: CommandSchema): CommandRunner {
-        return new CommandRunner(config);
+    static of(config: CommandSchema): CommandExecutor {
+        return new CommandExecutor(config);
     }
 
-    findFilter(arg: string, filters: string | string[], prefix: boolean = false): string | undefined {
+    private findFilter(arg: string, filters: string | string[], prefix: boolean = false): string | undefined {
         if (arg != null && filters != null) {
             filters = filters instanceof Array ? filters : [filters];
             return filters.find(value =>
@@ -75,21 +74,31 @@ export class CommandRunner {
         return undefined;
     }
 
-    parse(type: string, value: string) {
-        if (type === 'boolean') {
-            return value != null && ['t', 'true', 'y', 'yes', 'on']
-                .some(v => v === value.toLowerCase());
+    private parse(type: string, value: string) {
+        switch (type) {
+            case 'boolean':
+                return value != null && value.length > 0 &&
+                    !['f', 'false', 'n', 'no', 'off', '0']
+                        .some(v => v === value.toLowerCase());
+            case 'int':
+            case 'integer':
+                return parseInt(value, 10);
+            case 'float':
+            case 'double':
+            case 'number':
+                return parseFloat(value);
+            default:
+                return value;
         }
-        if (type === 'integer') {
-            return parseInt(value, 10);
-        }
-        if (type === 'number') {
-            return parseFloat(value);
-        }
-        return value;
     }
 
-    analysis(
+    private implementFunction(func: any): ImplementFunction | undefined {
+        if (func instanceof Function || typeof func === 'function')
+            return func;
+        return undefined;
+    }
+
+    private analysis(
         result: CommandArgument,
         index: number,
         children?: TaskChildSchema[]) {
@@ -103,8 +112,10 @@ export class CommandRunner {
 
                 for (const c of children || []) {
                     if (c.type === 'value') {
-                        if (c.index == null || c.index === i) {
+                        if (c.index === i ||
+                            c.index == null && result.args[c.name] == null) {
                             result.args[c.name] = this.parse(c.dataType, arg);
+                            break;
                         }
                     } else {
                         const filter = this.findFilter(arg, c.filters, c.type === 'param');
@@ -112,11 +123,11 @@ export class CommandRunner {
                         if (filter != null) {
                             if (c.type === 'param') {
                                 result.args[c.name] = this.parse(c.dataType, arg.slice(filter.length));
+                                break;
                             } else if (['task', 'flag', 'detect'].includes(c.type)) {
                                 if (c.type === 'task') {
                                     result.tasks.push(c.name);
-                                    if (c.impl instanceof Function)
-                                        result.impl = c.impl;
+                                    result.impl = this.implementFunction(c.impl);
                                 } else if (c.type === 'flag') {
                                     if (c.name.startsWith('!'))
                                         result.args[c.name.slice(1)] = false;
@@ -124,6 +135,7 @@ export class CommandRunner {
                                         result.args[c.name] = true;
                                 }
                                 i += this.analysis(result, index + i, c.children);
+                                break;
                             }
                         }
                     }
@@ -136,16 +148,17 @@ export class CommandRunner {
 
     execute(argv: string[] = process.argv.slice(2), cwd: string = process.cwd()) {
         const result: CommandArgument = {
+            config: this.config,
             argv: argv != null ? argv : process.argv.slice(2),
             cwd: cwd != null ? cwd : process.cwd(),
-            impl: this.config.impl,
+            impl: this.implementFunction(this.config.impl),
             tasks: [],
             args: {}
         };
         if (this.config.children != null)
             this.analysis(result, 0, this.config.children);
 
-        if (result.impl instanceof Function)
-            result.impl(result);
+        if (result.impl != null)
+            result.impl.call(this, result);
     }
 }
