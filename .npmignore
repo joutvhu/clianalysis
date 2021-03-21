@@ -273,5 +273,6 @@ Temporary Items
 # Source code
 src
 test
+jest.config.ts
 tsconfig.json
 tslint.json

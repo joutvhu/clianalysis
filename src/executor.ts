@@ -1,4 +1,4 @@
-import {CommandArgument, CommandSchema, ImplementFunction, TaskChildrenSchema} from './schema';
+import {CommandArgument, CommandSchema, TaskChildrenSchema} from './schema';
 
 export class CommandExecutor {
     private readonly config: CommandSchema = {};
@@ -39,12 +39,6 @@ export class CommandExecutor {
         }
     }
 
-    private implementFunction(func: any): ImplementFunction | undefined {
-        if (func instanceof Function || typeof func === 'function')
-            return func;
-        return undefined;
-    }
-
     private analysis(
         result: CommandArgument,
         index: number,
@@ -60,8 +54,8 @@ export class CommandExecutor {
                 for (const c of children || []) {
                     if (c.type === 'value') {
                         if (c.index === i ||
-                            c.index == null && result.args[c.name] == null) {
-                            result.args[c.name] = this.parse(c.dataType, arg);
+                            c.index == null && !result.hasValue(c.name)) {
+                            result.setArg(c.name, this.parse(c.dataType, arg));
                             break;
                         }
                     } else {
@@ -69,17 +63,17 @@ export class CommandExecutor {
 
                         if (filter != null) {
                             if (c.type === 'param') {
-                                result.args[c.name] = this.parse(c.dataType, arg.slice(filter.length));
+                                result.setArg(c.name, this.parse(c.dataType, arg.slice(filter.length)));
                                 break;
                             } else if (['task', 'flag', 'group'].includes(c.type)) {
                                 if (c.type === 'task') {
-                                    result.tasks.push(c.name);
-                                    result.impl = this.implementFunction(c.impl);
+                                    result.addTask(c);
+                                    result.setImpl(c.impl);
                                 } else if (c.type === 'flag') {
                                     if (c.name.startsWith('!'))
-                                        result.args[c.name.slice(1)] = false;
+                                        result.setArg(c.name.slice(1), false);
                                     else
-                                        result.args[c.name] = true;
+                                        result.setArg(c.name, true);
                                 }
                                 i += this.analysis(result, index + i, c.children);
                                 break;
@@ -94,20 +88,9 @@ export class CommandExecutor {
     }
 
     execute(argv?: string[], cwd?: string) {
-        if (argv == null) argv = process.argv.slice(2);
-        if (cwd == null) cwd = process.cwd();
-
-        const result: CommandArgument = {
-            config: this.config,
-            argv, cwd,
-            impl: this.implementFunction(this.config.impl),
-            tasks: [],
-            args: {}
-        };
+        const result: CommandArgument = new CommandArgument(this.config, argv, cwd);
         if (this.config.children != null)
             this.analysis(result, 0, this.config.children);
-
-        if (result.impl != null)
-            result.impl.call(this, result);
+        result.callImpl(this);
     }
 }

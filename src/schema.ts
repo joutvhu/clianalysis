@@ -1,13 +1,6 @@
-export interface CommandArgument {
-    config: CommandSchema;
-    argv: string[];
-    cwd: string;
-    tasks: any[];
-    args: any;
-    impl?: ImplementFunction;
-}
+import {ImplementFunction, CommandArgument} from './argument';
 
-export type ImplementFunction = (option: CommandArgument) => void;
+export {ImplementFunction, CommandArgument};
 
 export interface ValueCommandSchema {
     type: 'value';
@@ -38,12 +31,7 @@ export interface GroupCommandSchema {
     children: GroupChildrenSchema[];
 }
 
-export type TaskChildrenSchema =
-    TaskCommandSchema
-    | FlagCommandSchema
-    | GroupCommandSchema
-    | ParamCommandSchema
-    | ValueCommandSchema;
+export type TaskChildrenSchema = TaskCommandSchema | GroupChildrenSchema;
 
 export interface TaskCommandSchema {
     type: 'task';
