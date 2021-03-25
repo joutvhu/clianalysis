@@ -1,4 +1,5 @@
-import {CommandArgument, CommandSchema, TaskChildrenSchema} from './schema';
+import {CommandArgument} from './argument';
+import {CommandSchema, TaskChildrenSchema} from './schema';
 
 export class CommandExecutor {
     private readonly config: CommandSchema = {};
@@ -56,6 +57,7 @@ export class CommandExecutor {
                         if (c.index === i ||
                             c.index == null && !result.hasValue(c.name)) {
                             result.setArg(c.name, this.parse(c.dataType, arg));
+                            result.trace(c.type, c.name);
                             break;
                         }
                     } else {
@@ -64,17 +66,20 @@ export class CommandExecutor {
                         if (filter != null) {
                             if (c.type === 'param') {
                                 result.setArg(c.name, this.parse(c.dataType, arg.slice(filter.length)));
+                                result.trace(c.type, c.name);
                                 break;
                             } else if (['task', 'flag', 'group'].includes(c.type)) {
                                 if (c.type === 'task') {
                                     result.addTask(c);
                                     result.setImpl(c.impl);
+                                    result.trace(c.type, c.name);
                                 } else if (c.type === 'flag') {
                                     if (c.name.startsWith('!'))
                                         result.setArg(c.name.slice(1), false);
                                     else
                                         result.setArg(c.name, true);
-                                }
+                                    result.trace(c.type, c.name);
+                                } else result.trace(c.type);
                                 i += this.analysis(result, index + i, c.children);
                                 break;
                             }

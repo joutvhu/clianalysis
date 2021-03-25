@@ -1,5 +1,10 @@
 import {CommandSchema, TaskChildrenSchema, TaskCommandSchema} from './schema';
 
+export interface TraceRoute {
+    type?: string;
+    name?: string;
+}
+
 export type ImplementFunction = (options: CommandArgument) => void;
 
 export class CommandArgument {
@@ -8,6 +13,7 @@ export class CommandArgument {
     private readonly _cwd: string;
 
     private _tasks: string[] = [];
+    private _trace: TraceRoute[];
     private _stack: TaskChildrenSchema[] = [];
     private _args: any = {};
     private _impl?: ImplementFunction;
@@ -16,6 +22,7 @@ export class CommandArgument {
         this._config = config;
         this._argv = argv != null ? argv : process.argv.slice(2);
         this._cwd = cwd != null ? cwd : process.cwd();
+        this._trace = [{name: ''}];
         this.setImpl(config.impl);
     }
 
@@ -46,6 +53,10 @@ export class CommandArgument {
     public setImpl(value: any) {
         if (value instanceof Function || typeof value === 'function')
             this._impl = value;
+    }
+
+    public trace(type?: string, name?: string) {
+        this._trace.push({type, name});
     }
 
     public addTask(task: TaskCommandSchema) {

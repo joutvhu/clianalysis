@@ -1,11 +1,10 @@
-import {ImplementFunction, CommandArgument} from './argument';
-
-export {ImplementFunction, CommandArgument};
+import {ImplementFunction} from './argument';
 
 export interface ValueCommandSchema {
     type: 'value';
     name: string;
     index?: number;
+    indexBy?: string;
     dataType: string;
 }
 
