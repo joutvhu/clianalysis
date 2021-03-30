@@ -34,7 +34,8 @@ describe('CommandExecutor', () => {
                         impl: mockImpl
                     }
                 ],
-                impl: () => {}
+                impl: () => {
+                }
             })
             .execute(['test', '-l', '--name=test']);
 

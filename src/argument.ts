@@ -6,9 +6,12 @@ export interface TraceRoute {
     name?: string;
 }
 
-export type ImplementFunction = (options: CommandArgument) => void;
+export type ImplementFunction = (args: CommandArgument) => void;
 
-export type ExceptionHandler = (options: CommandArgument, errors: ArgumentError[]) => boolean;
+/**
+ * @return should call next handler
+ */
+export type ExceptionHandler = (args: CommandArgumentError) => boolean;
 
 export interface Data {
     [key: string]: any;
@@ -21,6 +24,10 @@ export interface CommandArgument {
     tasks: string[];
     trace: TraceRoute[];
     stack: AbstractCommandSchema[];
+}
+
+export interface CommandArgumentError extends CommandArgument {
+    errors: ArgumentError[];
 }
 
 export interface ArgumentError {
