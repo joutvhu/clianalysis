@@ -1,7 +1,7 @@
 import {CommandExecutor} from './index';
 
-describe('CommandExecutor', () => {
-    test('call impl function', () => {
+describe('Index', () => {
+    test('call implement function', () => {
         const mockImpl = jest.fn().mockImplementation(args => {
             return args.args.name === 'test' && args.args.local === true;
         });
