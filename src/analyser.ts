@@ -235,9 +235,10 @@ export class CommandAnalyser {
                 }
 
                 return undefined;
-            }, () => {
-                this._errors.push({index, argument: arg});
-            });
+            }, () => this._errors.push({
+                index,
+                argument: arg
+            }));
 
             if (action === false)
                 return false;
