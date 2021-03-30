@@ -31,25 +31,7 @@ jobs:
             lib
             package-lock.json
 
-#   publish-npm:
-#     needs: build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: actions/setup-node@v1
-#         with:
-#           node-version: 12
-#           registry-url: https://registry.npmjs.org/
-#       - name: Download lock and lib
-#         uses: actions/download-artifact@v2
-#         with:
-#           name: lock-and-lib
-#       - run: npm ci
-#       - run: npm publish
-#         env:
-#           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-
-  publish-gpr:
+  publish-npm:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -57,8 +39,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12
-          registry-url: https://npm.pkg.github.com/
-          scope: '@joutvhu'
+          registry-url: https://registry.npmjs.org/
       - name: Download lock and lib
         uses: actions/download-artifact@v2
         with:
@@ -66,4 +47,23 @@ jobs:
       - run: npm ci
       - run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+
+#   publish-gpr:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - uses: actions/setup-node@v1
+#         with:
+#           node-version: 12
+#           registry-url: https://npm.pkg.github.com/
+#           scope: '@joutvhu'
+#       - name: Download lock and lib
+#         uses: actions/download-artifact@v2
+#         with:
+#           name: lock-and-lib
+#       - run: npm ci
+#       - run: npm publish
+#         env:
+#           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
