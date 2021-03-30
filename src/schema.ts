@@ -49,13 +49,13 @@ export interface TaskCommandSchema {
     filters: CommandFilter | CommandFilter[];
     children?: TaskChildrenSchema[];
     impl?: ImplementFunction;
-    err?: ExceptionHandler[] | ExceptionHandler;
+    exhale?: ExceptionHandler[] | ExceptionHandler;
 }
 
 export interface CommandSchema {
     children?: TaskChildrenSchema[];
     impl?: ImplementFunction;
-    err?: ExceptionHandler[] | ExceptionHandler;
+    exhale?: ExceptionHandler[] | ExceptionHandler;
 }
 
 export type AbstractCommandSchema = CommandSchema | TaskChildrenSchema;

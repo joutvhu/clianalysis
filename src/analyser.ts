@@ -1,5 +1,5 @@
-import {ArgumentError, CommandArgument, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
-import {AbstractCommandSchema, CommandFilter, CommandSchema, TaskChildrenSchema, TaskCommandSchema, ValueCommandSchema} from './schema';
+import {CommandArgument, CommandArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
+import {AbstractCommandSchema, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
 
 export class CommandAnalyser {
     private readonly _argv: string[];
@@ -10,14 +10,14 @@ export class CommandAnalyser {
     private _trace: TraceRoute[] = [];
     private _args: Data = {};
     private _impl?: ImplementFunction;
-    private _err: ExceptionHandler[] = [];
+    private _exhale: ExceptionHandler[] = [];
 
     constructor(config: CommandSchema, argv?: string[], cwd?: string) {
         this._argv = argv != null ? argv : process.argv.slice(2);
         this._cwd = cwd != null ? cwd : process.cwd();
         this._stack = [config];
-        this.setImpl(config.impl);
-        this.setErr(config.err);
+        this.setImplementFunction(config.impl);
+        this.setExceptionHandler(config.exhale);
     }
 
     public get arguments(): CommandArgument {
@@ -31,32 +31,24 @@ export class CommandAnalyser {
         };
     }
 
-    private setImpl(value: any) {
+    private setImplementFunction(value: any) {
         if (value instanceof Function || typeof value === 'function')
             this._impl = value;
     }
 
-    private setErr(value: any) {
+    private setExceptionHandler(value: any) {
         for (const v of this.toArray(value)) {
             if (v instanceof Function || typeof v === 'function')
-                this._err.push(v);
+                this._exhale.push(v);
         }
     }
 
-    private trace(config: any) {
+    private traceArguments(config: any) {
         this._trace.push({
             id: config.id,
             type: config.type,
             name: config.name
         });
-    }
-
-    private addTask(task: TaskCommandSchema) {
-        this._tasks.push(task.name);
-    }
-
-    public addStack(stack: TaskChildrenSchema) {
-        this._stack.push(stack);
     }
 
     private hasValue(key: string): boolean {
@@ -150,7 +142,7 @@ export class CommandAnalyser {
                                 this._stack.push(status.adding);
                         }
                         if (status.action === 'break')
-                            return false;
+                            return true;
                     }
                 }
             }
@@ -158,7 +150,7 @@ export class CommandAnalyser {
 
         if (notfound != null) {
             notfound();
-            return true;
+            return false;
         }
         return undefined;
     }
@@ -176,7 +168,7 @@ export class CommandAnalyser {
         return false;
     }
 
-    public analysis() {
+    public analysis(): boolean {
         const len = this._argv.length;
         let index = 0;
 
@@ -188,7 +180,7 @@ export class CommandAnalyser {
                 if (child.type === 'value') {
                     if (this.checkIndex(child, index) || child.index == null && !this.hasValue(child.name)) {
                         this.setArg(child.name, this.parse(child.dataType, arg));
-                        this.trace(child);
+                        this.traceArguments(child);
                         return {
                             action: 'break'
                         };
@@ -199,25 +191,25 @@ export class CommandAnalyser {
                     if (filter != null) {
                         if (child.type === 'param') {
                             this.setArg(child.name, this.parse(child.dataType, arg.slice(filter.length)));
-                            this.trace(child);
+                            this.traceArguments(child);
                             return true;
                         } else if (['task', 'flag', 'group'].includes(child.type)) {
                             if (child.type === 'task') {
-                                this.addTask(child);
-                                this.setImpl(child.impl);
-                                this.setErr(child.err);
+                                this._tasks.push(child.name);
+                                this.setImplementFunction(child.impl);
+                                this.setExceptionHandler(child.exhale);
                             } else if (child.type === 'flag') {
                                 if (child.name.startsWith('!'))
                                     this.setArg(child.name.slice(1), false);
                                 else
                                     this.setArg(child.name, true);
                             }
-                            this.trace(child);
+                            this.traceArguments(child);
 
                             return {
                                 action: 'break',
                                 overwrite: child.type !== 'task',
-                                adding: child.children instanceof Array ? child : null
+                                adding: child.children instanceof Array ? child : undefined
                             };
                         }
                     }
@@ -225,19 +217,19 @@ export class CommandAnalyser {
 
                 return undefined;
             }, () => {
-                const errors: ArgumentError[] = [{
-                    index,
-                    argument: arg
-                }];
+                const args: CommandArgumentError | any = this.arguments;
+                args.errors = [{index, argument: arg}];
 
-                for (let i = this._err.length - 1; i > -1; i--) {
-                    const exceptionHandler = this._err[i];
-                    if (exceptionHandler(this.arguments, errors))
+                for (let i = this._exhale.length - 1; i > -1; i--) {
+                    if (this._exhale[i](args))
                         break;
                 }
             });
 
-            if (action) return;
+            if (action === false)
+                return false;
         }
+
+        return true;
     }
 }
