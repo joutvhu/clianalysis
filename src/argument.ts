@@ -26,11 +26,11 @@ export interface CommandArgument {
     stack: AbstractCommandSchema[];
 }
 
-export interface CommandArgumentError extends CommandArgument {
-    errors: ArgumentError[];
-}
-
 export interface ArgumentError {
     index: number;
     argument: string;
+}
+
+export interface CommandArgumentError extends CommandArgument {
+    errors: ArgumentError[];
 }
