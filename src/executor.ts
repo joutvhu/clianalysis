@@ -14,7 +14,17 @@ export class CommandExecutor {
 
     execute(argv?: string[], cwd?: string) {
         const result: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
-        result.analysis();
-        result.callImpl();
+        const success: boolean = result.analysis();
+        const args: any = result.arguments;
+
+        if (success) {
+            if (result.implementFunction != null)
+                result.implementFunction(args);
+        } else {
+            for (let i = result.exceptionHandlers.length - 1; i > -1; i--) {
+                if (!result.exceptionHandlers[i](args))
+                    break;
+            }
+        }
     }
 }

@@ -8,6 +8,9 @@ export interface TraceRoute {
 
 export type ImplementFunction = (args: CommandArgument) => void;
 
+/**
+ * @return should call next handler
+ */
 export type ExceptionHandler = (args: CommandArgumentError) => boolean;
 
 export interface Data {

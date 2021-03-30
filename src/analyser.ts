@@ -1,4 +1,12 @@
-import {CommandArgument, CommandArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
+import {
+    ArgumentError,
+    CommandArgument,
+    CommandArgumentError,
+    Data,
+    ExceptionHandler,
+    ImplementFunction,
+    TraceRoute
+} from './argument';
 import {AbstractCommandSchema, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
 
 export class CommandAnalyser {
@@ -9,6 +17,7 @@ export class CommandAnalyser {
     private _tasks: string[] = [];
     private _trace: TraceRoute[] = [];
     private _args: Data = {};
+    private _errors: ArgumentError[] = [];
     private _impl?: ImplementFunction;
     private _exhale: ExceptionHandler[] = [];
 
@@ -20,8 +29,16 @@ export class CommandAnalyser {
         this.setExceptionHandler(config.exhale);
     }
 
-    public get arguments(): CommandArgument {
-        return {
+    public get implementFunction(): ImplementFunction | undefined {
+        return this._impl;
+    }
+
+    public get exceptionHandlers(): ExceptionHandler[] {
+        return this._exhale;
+    }
+
+    public get arguments(): CommandArgument | CommandArgumentError | any {
+        const result: any = {
             argv: this._argv,
             cwd: this._cwd,
             args: this._args,
@@ -29,6 +46,11 @@ export class CommandAnalyser {
             stack: this._stack,
             trace: this._trace
         };
+
+        if (this._errors.length > 0)
+            result.errors = this._errors;
+
+        return result;
     }
 
     private setImplementFunction(value: any) {
@@ -55,13 +77,8 @@ export class CommandAnalyser {
         return this._args[key] != null;
     }
 
-    private setArg(key: string, value: any) {
+    private setArgument(key: string, value: any) {
         this._args[key] = value;
-    }
-
-    public callImpl() {
-        if (this._impl != null)
-            this._impl(this.arguments);
     }
 
     private toArray<T>(value: T | T[] | undefined | null): T[] {
@@ -179,7 +196,7 @@ export class CommandAnalyser {
             const action = this.forEachChild(child => {
                 if (child.type === 'value') {
                     if (this.checkIndex(child, index) || child.index == null && !this.hasValue(child.name)) {
-                        this.setArg(child.name, this.parse(child.dataType, arg));
+                        this.setArgument(child.name, this.parse(child.dataType, arg));
                         this.traceArguments(child);
                         return {
                             action: 'break'
@@ -190,9 +207,11 @@ export class CommandAnalyser {
 
                     if (filter != null) {
                         if (child.type === 'param') {
-                            this.setArg(child.name, this.parse(child.dataType, arg.slice(filter.length)));
+                            this.setArgument(child.name, this.parse(child.dataType, arg.slice(filter.length)));
                             this.traceArguments(child);
-                            return true;
+                            return {
+                                action: 'break'
+                            };
                         } else if (['task', 'flag', 'group'].includes(child.type)) {
                             if (child.type === 'task') {
                                 this._tasks.push(child.name);
@@ -200,9 +219,9 @@ export class CommandAnalyser {
                                 this.setExceptionHandler(child.exhale);
                             } else if (child.type === 'flag') {
                                 if (child.name.startsWith('!'))
-                                    this.setArg(child.name.slice(1), false);
+                                    this.setArgument(child.name.slice(1), false);
                                 else
-                                    this.setArg(child.name, true);
+                                    this.setArgument(child.name, true);
                             }
                             this.traceArguments(child);
 
@@ -217,13 +236,7 @@ export class CommandAnalyser {
 
                 return undefined;
             }, () => {
-                const args: CommandArgumentError | any = this.arguments;
-                args.errors = [{index, argument: arg}];
-
-                for (let i = this._exhale.length - 1; i > -1; i--) {
-                    if (this._exhale[i](args))
-                        break;
-                }
+                this._errors.push({index, argument: arg});
             });
 
             if (action === false)
