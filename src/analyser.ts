@@ -1,35 +1,5 @@
-import {
-    AbstractCommandSchema,
-    ArgumentError,
-    CommandFilter,
-    CommandSchema,
-    TaskChildrenSchema,
-    TaskCommandSchema,
-    ValueCommandSchema
-} from './schema';
-
-export interface TraceRoute {
-    id?: string;
-    type?: string;
-    name?: string;
-}
-
-export type ImplementFunction = (options: CommandArgument) => void;
-
-export type ExceptionHandler = (options: CommandArgument, errors: ArgumentError[]) => boolean;
-
-export interface Data {
-    [key: string]: any;
-}
-
-export interface CommandArgument {
-    argv: string[];
-    cwd: string;
-    args: Data;
-    tasks: string[];
-    trace: TraceRoute[];
-    stack: AbstractCommandSchema[];
-}
+import {ArgumentError, CommandArgument, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
+import {AbstractCommandSchema, CommandFilter, CommandSchema, TaskChildrenSchema, TaskCommandSchema, ValueCommandSchema} from './schema';
 
 export class CommandAnalyser {
     private readonly _argv: string[];
@@ -50,30 +20,6 @@ export class CommandAnalyser {
         this.setErr(config.err);
     }
 
-    public get config(): CommandSchema {
-        return this._stack[0] as CommandSchema;
-    }
-
-    public get argv(): string[] {
-        return this._argv;
-    }
-
-    public get cwd(): string {
-        return this._cwd;
-    }
-
-    public get tasks(): string[] {
-        return this._tasks;
-    }
-
-    public get stack(): AbstractCommandSchema[] {
-        return this._stack;
-    }
-
-    public get args(): any {
-        return this._args;
-    }
-
     public get arguments(): CommandArgument {
         return {
             argv: this._argv,
@@ -85,19 +31,19 @@ export class CommandAnalyser {
         };
     }
 
-    public setImpl(value: any) {
+    private setImpl(value: any) {
         if (value instanceof Function || typeof value === 'function')
             this._impl = value;
     }
 
-    public setErr(value: any) {
+    private setErr(value: any) {
         for (const v of this.toArray(value)) {
             if (v instanceof Function || typeof v === 'function')
                 this._err.push(v);
         }
     }
 
-    public trace(config: any) {
+    private trace(config: any) {
         this._trace.push({
             id: config.id,
             type: config.type,
@@ -105,7 +51,7 @@ export class CommandAnalyser {
         });
     }
 
-    public addTask(task: TaskCommandSchema) {
+    private addTask(task: TaskCommandSchema) {
         this._tasks.push(task.name);
     }
 
@@ -113,11 +59,11 @@ export class CommandAnalyser {
         this._stack.push(stack);
     }
 
-    public hasValue(key: string): boolean {
+    private hasValue(key: string): boolean {
         return this._args[key] != null;
     }
 
-    public setArg(key: string, value: any) {
+    private setArg(key: string, value: any) {
         this._args[key] = value;
     }
 
@@ -182,7 +128,7 @@ export class CommandAnalyser {
         }
     }
 
-    public forEachChild(
+    private forEachChild(
         callback: (child: TaskChildrenSchema) => any,
         notfound?: () => void
     ): boolean | undefined {

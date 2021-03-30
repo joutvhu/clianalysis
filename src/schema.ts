@@ -1,4 +1,4 @@
-import {ExceptionHandler, ImplementFunction} from './analyser';
+import {ExceptionHandler, ImplementFunction} from './argument';
 
 export type CommandFilter = string | RegExp | ((value: string) => boolean | string);
 
@@ -59,8 +59,3 @@ export interface CommandSchema {
 }
 
 export type AbstractCommandSchema = CommandSchema | TaskChildrenSchema;
-
-export interface ArgumentError {
-    index: number;
-    argument: string;
-}
