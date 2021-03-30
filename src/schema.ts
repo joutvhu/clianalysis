@@ -1,47 +1,66 @@
-import {ImplementFunction, CommandArgument} from './argument';
+import {ExceptionHandler, ImplementFunction} from './analyser';
 
-export {ImplementFunction, CommandArgument};
+export type CommandFilter = string | RegExp | ((value: string) => boolean | string);
 
 export interface ValueCommandSchema {
+    id?: string;
     type: 'value';
     name: string;
     index?: number;
+    indexedBy?: string;
     dataType: string;
+    inheritance?: boolean;
 }
 
 export interface ParamCommandSchema {
+    id?: string;
     type: 'param';
     name: string;
-    filters: string | string[];
+    filters: CommandFilter | CommandFilter[];
     dataType: string;
+    inheritance?: boolean;
 }
 
 export type GroupChildrenSchema = FlagCommandSchema | GroupCommandSchema | ParamCommandSchema | ValueCommandSchema;
 
 export interface FlagCommandSchema {
+    id?: string;
     type: 'flag';
     name: string;
-    filters: string | string[];
+    filters: CommandFilter | CommandFilter[];
     children?: GroupChildrenSchema[];
+    inheritance?: boolean;
 }
 
 export interface GroupCommandSchema {
+    id?: string;
     type: 'group';
-    filters: string | string[];
+    filters: CommandFilter | CommandFilter[];
     children: GroupChildrenSchema[];
+    inheritance?: boolean;
 }
 
 export type TaskChildrenSchema = TaskCommandSchema | GroupChildrenSchema;
 
 export interface TaskCommandSchema {
+    id?: string;
     type: 'task';
     name: string;
-    filters: string | string[];
+    filters: CommandFilter | CommandFilter[];
     children?: TaskChildrenSchema[];
     impl?: ImplementFunction;
+    err?: ExceptionHandler[] | ExceptionHandler;
 }
 
 export interface CommandSchema {
     children?: TaskChildrenSchema[];
     impl?: ImplementFunction;
+    err?: ExceptionHandler[] | ExceptionHandler;
+}
+
+export type AbstractCommandSchema = CommandSchema | TaskChildrenSchema;
+
+export interface ArgumentError {
+    index: number;
+    argument: string;
 }
