@@ -10,8 +10,8 @@ export interface NodeCheckingOption {
 
 export class CommandExecutor {
     private readonly config: CommandSchema = {};
-    private exited = false;
-    private exitCode = false;
+    private _exited = false;
+    private _exitCode = false;
 
     constructor(config: CommandSchema) {
         this.config = config;
@@ -22,13 +22,13 @@ export class CommandExecutor {
     }
 
     private exit(code?: number): void {
-        this.exited = true;
-        if (this.exitCode)
+        this._exited = true;
+        if (this._exitCode)
             process.exit(code);
     }
 
     public endWithExit(enable: boolean = true): CommandExecutor {
-        this.exitCode = enable;
+        this._exitCode = enable;
         return this;
     }
 
@@ -56,28 +56,30 @@ export class CommandExecutor {
         return this;
     }
 
-    public async execute(argv?: string[], cwd?: string): Promise<void> {
-        if (this.exited) return;
+    public execute(argv?: string[], cwd?: string) {
+        if (this._exited) return;
 
         const analyser: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
         const success: boolean = analyser.analysis();
         const args: any = analyser.arguments;
-        let code = 0;
 
-        if (success) {
-            if (analyser.implementFunction != null) {
-                const result: any = analyser.implementFunction(args);
-                if (result instanceof Promise) await result;
+        (async () => {
+            if (success) {
+                if (analyser.implementFunction != null) {
+                    const result: any = analyser.implementFunction(args);
+                    if (result instanceof Promise) await result;
+                }
+                return 0;
+            } else {
+                for (let i = analyser.exceptionHandlers.length - 1; i > -1; i--) {
+                    let result: any = analyser.exceptionHandlers[i](args);
+                    if (result instanceof Promise) result = await result;
+                    if (!result) break;
+                }
+                return 1;
             }
-        } else {
-            for (let i = analyser.exceptionHandlers.length - 1; i > -1; i--) {
-                let result: any = analyser.exceptionHandlers[i](args);
-                if (result instanceof Promise) result = await result;
-                if (!result) break;
-            }
-            code = 1;
-        }
-
-        this.exit(code);
+        })().then(value => {
+            this.exit(value);
+        });
     }
 }
