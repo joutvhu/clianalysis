@@ -38,7 +38,7 @@ export class CommandExecutor {
             const toolName = options.toolName != null ? options.toolName : this.config.name;
             const version = `v${options.minMajor}.${options.minMinor != null ? options.minMinor : '0'}`;
 
-            console.log(
+            console.error(
                 `ERROR: This version of ${toolName} requires at least Node.js ${version}` +
                 `The current version of Node.js is ${process.version}`);
             this.exit(1);
