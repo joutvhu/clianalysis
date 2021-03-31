@@ -26,8 +26,9 @@ export class CommandExecutor {
             process.exit(code);
     }
 
-    public endWithExit(enable: boolean = true) {
+    public endWithExit(enable: boolean = true): CommandExecutor {
         this.exitCode = enable;
+        return this;
     }
 
     public checkNode(options: NodeCheckingOption): CommandExecutor {
@@ -49,6 +50,7 @@ export class CommandExecutor {
 
     public execute(argv?: string[], cwd?: string) {
         if (this.exited) return;
+
         const result: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
         const success: boolean = result.analysis();
         const args: any = result.arguments;
