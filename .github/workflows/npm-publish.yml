@@ -19,11 +19,11 @@ jobs:
         run: npm install
       - name: Check tslint
         run: npm run lint
-      - name: Unit Testing
+      - name: Unit testing
         run: npm run test
-      - name: Compile ts
+      - name: Compile typescript
         run: npm run build
-      - name: Upload build
+      - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: lock-and-lib
@@ -40,12 +40,14 @@ jobs:
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
-      - name: Download lock and lib
+      - name: Download artifact
         uses: actions/download-artifact@v2
         with:
           name: lock-and-lib
-      - run: npm ci
-      - run: npm publish
+      - name: Install packages
+        run: npm ci
+      - name: Publish package
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
 
@@ -59,11 +61,13 @@ jobs:
 #           node-version: 12
 #           registry-url: https://npm.pkg.github.com/
 #           scope: '@joutvhu'
-#       - name: Download lock and lib
+#       - name: Download artifact
 #         uses: actions/download-artifact@v2
 #         with:
 #           name: lock-and-lib
-#       - run: npm ci
-#       - run: npm publish
+#       - name: Install packages
+#         run: npm ci
+#       - name: Publish package
+#         run: npm publish
 #         env:
 #           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
