@@ -175,8 +175,8 @@ export class CommandAnalyser {
     private checkIndex(child: ValueCommandSchema, index: number): boolean {
         if (typeof child.index === 'number') {
             if (child.indexedBy != null) {
-                for (let i = this._trace.length - 1; i > -1; i--) {
-                    const t: TraceRoute = this._trace[i];
+                for (let i = this._trace.length; i > 0; i--) {
+                    const t: TraceRoute = this._trace[i - 1];
                     if (t.id === child.indexedBy || (t.id == null && t.name === child.indexedBy))
                         return child.index === index - i;
                 }
