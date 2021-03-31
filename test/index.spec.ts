@@ -1,4 +1,4 @@
-import {CommandExecutor} from './index';
+import {CommandExecutor} from '../src';
 
 describe('Index', () => {
     test('call implement function', () => {
