@@ -22,9 +22,9 @@ describe('CommandExecutor', () => {
                         ]
                     }
                 ],
-                impl: () => {
+                execute: () => {
                 },
-                exhale: mockExhade
+                exception: mockExhade
             })
             .execute(['test', '-l', '--name=test']);
 

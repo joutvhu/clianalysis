@@ -1,8 +1,8 @@
-import {ExceptionHandler, ImplementFunction} from './argument';
+import {Data, ExceptionHandler, ImplementFunction} from './argument';
 
 export type CommandFilter = string | RegExp | ((value: string) => boolean | string);
 
-export interface ValueCommandSchema {
+export interface ValueCommandSchema extends Data {
     id?: string;
     type: 'value';
     name: string;
@@ -12,7 +12,7 @@ export interface ValueCommandSchema {
     inheritance?: boolean;
 }
 
-export interface ParamCommandSchema {
+export interface ParamCommandSchema extends Data {
     id?: string;
     type: 'param';
     name: string;
@@ -23,7 +23,7 @@ export interface ParamCommandSchema {
 
 export type GroupChildrenSchema = FlagCommandSchema | GroupCommandSchema | ParamCommandSchema | ValueCommandSchema;
 
-export interface FlagCommandSchema {
+export interface FlagCommandSchema extends Data {
     id?: string;
     type: 'flag';
     name: string;
@@ -32,7 +32,7 @@ export interface FlagCommandSchema {
     inheritance?: boolean;
 }
 
-export interface GroupCommandSchema {
+export interface GroupCommandSchema extends Data {
     id?: string;
     type: 'group';
     filters: CommandFilter | CommandFilter[];
@@ -42,20 +42,21 @@ export interface GroupCommandSchema {
 
 export type TaskChildrenSchema = TaskCommandSchema | GroupChildrenSchema;
 
-export interface TaskCommandSchema {
+export interface TaskCommandSchema extends Data {
     id?: string;
     type: 'task';
     name: string;
     filters: CommandFilter | CommandFilter[];
     children?: TaskChildrenSchema[];
-    impl?: ImplementFunction;
-    exhale?: ExceptionHandler[] | ExceptionHandler;
+    execute?: ImplementFunction;
+    exception?: ExceptionHandler[] | ExceptionHandler;
 }
 
-export interface CommandSchema {
+export interface CommandSchema extends Data {
+    type?: undefined;
     children?: TaskChildrenSchema[];
-    impl?: ImplementFunction;
-    exhale?: ExceptionHandler[] | ExceptionHandler;
+    execute?: ImplementFunction;
+    exception?: ExceptionHandler[] | ExceptionHandler;
 }
 
-export type AbstractCommandSchema = CommandSchema | TaskChildrenSchema;
+export type CommandSchemaTypes = CommandSchema | TaskChildrenSchema;

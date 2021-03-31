@@ -7,12 +7,12 @@ import {
     ImplementFunction,
     TraceRoute
 } from './argument';
-import {AbstractCommandSchema, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {CommandSchemaTypes, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
 
 export class CommandAnalyser {
     private readonly _argv: string[];
     private readonly _cwd: string;
-    private readonly _stack: AbstractCommandSchema[] = [];
+    private readonly _stack: CommandSchemaTypes[] = [];
 
     private _tasks: string[] = [];
     private _trace: TraceRoute[] = [];
@@ -25,8 +25,8 @@ export class CommandAnalyser {
         this._argv = argv != null ? argv : process.argv.slice(2);
         this._cwd = cwd != null ? cwd : process.cwd();
         this._stack = [config];
-        this.setImplementFunction(config.impl);
-        this.setExceptionHandler(config.exhale);
+        this.setImplementFunction(config.execute);
+        this.setExceptionHandler(config.exception);
     }
 
     public get implementFunction(): ImplementFunction | undefined {
@@ -215,8 +215,8 @@ export class CommandAnalyser {
                         } else if (['task', 'flag', 'group'].includes(child.type)) {
                             if (child.type === 'task') {
                                 this._tasks.push(child.name);
-                                this.setImplementFunction(child.impl);
-                                this.setExceptionHandler(child.exhale);
+                                this.setImplementFunction(child.execute);
+                                this.setExceptionHandler(child.exception);
                             } else if (child.type === 'flag') {
                                 if (child.name.startsWith('!'))
                                     this.setArgument(child.name.slice(1), false);
