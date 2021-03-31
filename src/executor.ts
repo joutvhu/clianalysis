@@ -4,6 +4,7 @@ import {CommandSchema} from './schema';
 export interface NodeCheckingOption {
     minMajor: number;
     minMinor?: number;
+    minMicro?: number;
     toolName?: string;
 }
 
@@ -32,12 +33,19 @@ export class CommandExecutor {
     }
 
     public checkNode(options: NodeCheckingOption): CommandExecutor {
-        const [major, minor]: any = process.versions.node.split('.');
+        const [major, minor, micro]: any = process.versions.node.split('.');
 
         if (options != null && options.minMajor != null && major < options.minMajor && (
-            options.minMinor == null || major == options.minMajor && minor < options.minMinor)) {
+            options.minMinor == null || (major == options.minMajor && minor < options.minMinor && (
+            options.minMicro == null || (minor == options.minMinor && micro < options.minMicro))))) {
             const toolName = options.toolName != null ? options.toolName : this.config.name;
-            const version = `v${options.minMajor}.${options.minMinor != null ? options.minMinor : '0'}`;
+            const version = `v${
+                options.minMajor
+            }.${
+                options.minMinor != null ? options.minMinor : '0'
+            }.${
+                options.minMicro != null ? options.minMicro : '0'
+            }`;
 
             console.error(
                 `ERROR: This version of ${toolName} requires at least Node.js ${version}` +
