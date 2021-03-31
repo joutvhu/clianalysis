@@ -1,4 +1,4 @@
-import {CommandExecutor} from './executor';
+import {CommandExecutor} from '../src/executor';
 
 describe('CommandExecutor', () => {
     test('call exception handlers', () => {
