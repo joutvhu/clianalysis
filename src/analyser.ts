@@ -7,12 +7,12 @@ import {
     ImplementFunction,
     TraceRoute
 } from './argument';
-import {AbstractCommandSchema, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {CommandSchemaTypes, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
 
 export class CommandAnalyser {
     private readonly _argv: string[];
     private readonly _cwd: string;
-    private readonly _stack: AbstractCommandSchema[] = [];
+    private readonly _stack: CommandSchemaTypes[] = [];
 
     private _tasks: string[] = [];
     private _trace: TraceRoute[] = [];

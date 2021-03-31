@@ -1,4 +1,4 @@
-import {AbstractCommandSchema} from './schema';
+import {CommandSchemaTypes} from './schema';
 
 export interface TraceRoute {
     id?: string;
@@ -23,7 +23,7 @@ export interface CommandArgument {
     args: Data;
     tasks: string[];
     trace: TraceRoute[];
-    stack: AbstractCommandSchema[];
+    stack: CommandSchemaTypes[];
 }
 
 export interface ArgumentError {
