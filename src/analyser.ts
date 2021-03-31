@@ -177,7 +177,7 @@ export class CommandAnalyser {
             if (child.indexedBy != null) {
                 for (let i = this._trace.length - 1; i > -1; i--) {
                     const t: TraceRoute = this._trace[i];
-                    if (t.id === child.indexedBy || (t.id === null && t.name === child.indexedBy))
+                    if (t.id === child.indexedBy || (t.id == null && t.name === child.indexedBy))
                         return child.index === index - i;
                 }
             } else return child.index === index;
