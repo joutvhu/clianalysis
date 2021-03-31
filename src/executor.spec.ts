@@ -8,6 +8,7 @@ describe('CommandExecutor', () => {
 
         CommandExecutor
             .of({
+                name: 'unit-test',
                 children: [
                     {
                         type: 'task',
