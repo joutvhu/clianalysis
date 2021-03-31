@@ -53,7 +53,6 @@ export interface TaskCommandSchema extends Data {
 }
 
 export interface CommandSchema extends Data {
-    type?: undefined;
     children?: TaskChildrenSchema[];
     execute?: ImplementFunction;
     exception?: ExceptionHandler[] | ExceptionHandler;
