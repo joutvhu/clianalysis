@@ -31,10 +31,10 @@ describe('Index', () => {
                                 dataType: 'string'
                             }
                         ],
-                        impl: mockImpl
+                        execute: mockImpl
                     }
                 ],
-                impl: () => {
+                execute: () => {
                 }
             })
             .execute(['test', '-l', '--name=test']);
@@ -68,7 +68,7 @@ describe('Index', () => {
                                 dataType: 'number'
                             }
                         ],
-                        impl: mockImpl
+                        execute: mockImpl
                     }
                 ]
             })
@@ -107,7 +107,7 @@ describe('Index', () => {
                                 dataType: 'boolean'
                             }
                         ],
-                        impl: mockImpl
+                        execute: mockImpl
                     }
                 ]
             })

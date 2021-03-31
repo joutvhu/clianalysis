@@ -1,7 +1,7 @@
 import {CommandSchema} from './schema';
 
 export const helper: CommandSchema = {
-    exhale: (args) => {
+    exception: (args) => {
         for (let i = args.stack.length - 1; i > -1; i--) {
             const stack = args.stack[i];
             if (i === 0 || stack.type == null || stack.type === 'task') {

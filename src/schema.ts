@@ -48,15 +48,15 @@ export interface TaskCommandSchema extends Data {
     name: string;
     filters: CommandFilter | CommandFilter[];
     children?: TaskChildrenSchema[];
-    impl?: ImplementFunction;
-    exhale?: ExceptionHandler[] | ExceptionHandler;
+    execute?: ImplementFunction;
+    exception?: ExceptionHandler[] | ExceptionHandler;
 }
 
 export interface CommandSchema extends Data {
     type?: undefined;
     children?: TaskChildrenSchema[];
-    impl?: ImplementFunction;
-    exhale?: ExceptionHandler[] | ExceptionHandler;
+    execute?: ImplementFunction;
+    exception?: ExceptionHandler[] | ExceptionHandler;
 }
 
 export type CommandSchemaTypes = CommandSchema | TaskChildrenSchema;
