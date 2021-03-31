@@ -8,6 +8,7 @@ describe('Index', () => {
 
         CommandExecutor
             .of({
+                name: 'unit-test',
                 children: [
                     {
                         type: 'task',
@@ -50,6 +51,7 @@ describe('Index', () => {
 
         CommandExecutor
             .of({
+                name: 'unit-test',
                 children: [
                     {
                         type: 'task',
@@ -85,6 +87,7 @@ describe('Index', () => {
 
         CommandExecutor
             .of({
+                name: 'unit-test',
                 children: [
                     {
                         type: 'task',

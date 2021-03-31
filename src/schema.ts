@@ -7,7 +7,7 @@ export interface ValueCommandSchema extends Data {
     type: 'value';
     name: string;
     index?: number;
-    indexedBy?: string;
+    indexedBy?: string | number;
     dataType: string;
     inheritance?: boolean;
 }
@@ -53,6 +53,8 @@ export interface TaskCommandSchema extends Data {
 }
 
 export interface CommandSchema extends Data {
+    name?: string;
+    extends?: string | CommandSchema | (() => CommandSchema);
     children?: TaskChildrenSchema[];
     execute?: ImplementFunction;
     exception?: ExceptionHandler[] | ExceptionHandler;
