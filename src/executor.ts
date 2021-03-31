@@ -21,7 +21,7 @@ export class CommandExecutor {
         return new CommandExecutor(config);
     }
 
-    private exit(code?: number) {
+    private exit(code?: number): void {
         this.exited = true;
         if (this.exitCode)
             process.exit(code);
@@ -56,23 +56,28 @@ export class CommandExecutor {
         return this;
     }
 
-    public execute(argv?: string[], cwd?: string) {
+    public async execute(argv?: string[], cwd?: string): Promise<void> {
         if (this.exited) return;
 
-        const result: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
-        const success: boolean = result.analysis();
-        const args: any = result.arguments;
+        const analyser: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
+        const success: boolean = analyser.analysis();
+        const args: any = analyser.arguments;
+        let code = 0;
 
         if (success) {
-            if (result.implementFunction != null)
-                result.implementFunction(args);
-            this.exit(0);
-        } else {
-            for (let i = result.exceptionHandlers.length - 1; i > -1; i--) {
-                if (!result.exceptionHandlers[i](args))
-                    break;
+            if (analyser.implementFunction != null) {
+                const result: any = analyser.implementFunction(args);
+                if (result instanceof Promise) await result;
             }
-            this.exit(1);
+        } else {
+            for (let i = analyser.exceptionHandlers.length - 1; i > -1; i--) {
+                let result: any = analyser.exceptionHandlers[i](args);
+                if (result instanceof Promise) result = await result;
+                if (!result) break;
+            }
+            code = 1;
         }
+
+        this.exit(code);
     }
 }
