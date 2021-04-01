@@ -1,6 +1,8 @@
 import {importBy, parentDirname} from 'import-by';
 import {CommandAnalyser} from './analyser';
-import {CommandSchema} from './schema';
+import {ExceptionHandler} from './argument';
+import {CommandExtension, CommandSchema} from './schema';
+import {Util} from './util';
 
 export interface NodeCheckingOption {
     minMajor: number;
@@ -16,6 +18,7 @@ export class CommandExecutor {
 
     constructor(config: CommandSchema) {
         this.config = config;
+        this.mergeConfiguration();
     }
 
     /**
@@ -27,6 +30,26 @@ export class CommandExecutor {
         if (typeof config === 'string')
             config = importBy(config, parentDirname(__filename)) as CommandSchema;
         return new CommandExecutor(config);
+    }
+
+    private mergeConfiguration() {
+        if (!(this.config.extends instanceof Array)) return;
+        for (const ex of this.config.extends) {
+            const extension: CommandExtension = ex instanceof Function || typeof ex === 'function' ? ex() : ex;
+            if (Util.isBlank(extension) || Util.isBlank(this.config)) break;
+
+            if (Util.isNotBlank(extension.exception)) {
+                const exception = Util.toArray<ExceptionHandler>(extension.exception);
+                this.config.exception = Util.toArray<ExceptionHandler>(this.config.exception);
+                this.config.exception.push(...exception);
+            }
+
+            if (Util.isNotBlank(extension.execute) && Util.isBlank(this.config.execute))
+                this.config.execute = extension.execute;
+
+            if (extension.children instanceof Array)
+                this.config.children?.push(...extension.children);
+        }
     }
 
     private exit(code?: number): void {

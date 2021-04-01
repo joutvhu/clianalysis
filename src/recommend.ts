@@ -1,6 +1,6 @@
-import {CommandSchema} from './schema';
+import {CommandExtension} from './schema';
 
-export const helper: CommandSchema = {
+export const helper: CommandExtension = {
     exception: (args) => {
         for (let i = args.stack.length - 1; i > -1; i--) {
             const stack = args.stack[i];

@@ -52,9 +52,17 @@ export interface TaskCommandSchema extends Data {
     exception?: ExceptionHandler[] | ExceptionHandler;
 }
 
+export interface CommandExtension {
+    children?: TaskChildrenSchema[];
+    execute?: ImplementFunction;
+    exception?: ExceptionHandler[] | ExceptionHandler;
+}
+
+export type CommandExtensionLoader = CommandExtension | (() => CommandExtension);
+
 export interface CommandSchema extends Data {
     name?: string;
-    extends?: string | CommandSchema | (() => CommandSchema);
+    extends?: CommandExtensionLoader[];
     children?: TaskChildrenSchema[];
     execute?: ImplementFunction;
     exception?: ExceptionHandler[] | ExceptionHandler;
