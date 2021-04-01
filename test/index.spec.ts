@@ -29,7 +29,7 @@ describe('Index', () => {
                                 type: 'param',
                                 name: 'name',
                                 filters: ['--name=', '-n='],
-                                dataType: 'string'
+                                format: 'string'
                             }
                         ],
                         execute: mockImpl
@@ -62,12 +62,12 @@ describe('Index', () => {
                                 type: 'param',
                                 name: 'amount',
                                 filters: ['--amount=', '-a='],
-                                dataType: 'integer'
+                                format: 'integer'
                             },
                             {
                                 type: 'value',
                                 name: 'position',
-                                dataType: 'number'
+                                format: 'number'
                             }
                         ],
                         execute: mockImpl
@@ -97,17 +97,17 @@ describe('Index', () => {
                             {
                                 type: 'value',
                                 name: 'v1',
-                                dataType: 'boolean'
+                                format: 'boolean'
                             },
                             {
                                 type: 'value',
                                 name: 'v2',
-                                dataType: 'boolean'
+                                format: 'boolean'
                             },
                             {
                                 type: 'value',
                                 name: 'v3',
-                                dataType: 'boolean'
+                                format: 'boolean'
                             }
                         ],
                         execute: mockImpl

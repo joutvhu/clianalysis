@@ -1,5 +1,5 @@
 import {ArgumentError, CommandArgument, CommandArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
-import {CommandFilter, CommandSchema, CommandSchemaTypes, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {CommandFilter, CommandSchema, CommandSchemaTypes, Parsable, TaskChildrenSchema, ValueCommandSchema} from './schema';
 import {Util} from './util';
 
 export class CommandAnalyser {
@@ -102,8 +102,8 @@ export class CommandAnalyser {
         return undefined;
     }
 
-    private parse(type: string, value: string) {
-        switch (type) {
+    private parse(config: Parsable, value: string) {
+        switch (config.format) {
             case 'boolean':
                 return value != null && value.length > 0 &&
                     !['f', 'false', 'n', 'no', 'off', '0']
@@ -179,7 +179,7 @@ export class CommandAnalyser {
             const action = this.forEachChild(child => {
                 if (child.type === 'value') {
                     if (this.checkIndex(child, index) || child.index == null && !this.hasValue(child.name)) {
-                        this.setArgument(child.name, this.parse(child.dataType, arg));
+                        this.setArgument(child.name, this.parse(child, arg));
                         this.traceArguments(child);
                         return {
                             action: 'break'
@@ -190,7 +190,7 @@ export class CommandAnalyser {
 
                     if (filter != null) {
                         if (child.type === 'param') {
-                            this.setArgument(child.name, this.parse(child.dataType, arg.slice(filter.length)));
+                            this.setArgument(child.name, this.parse(child, arg.slice(filter.length)));
                             this.traceArguments(child);
                             return {
                                 action: 'break'

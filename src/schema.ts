@@ -2,22 +2,24 @@ import {Data, ExceptionHandler, ImplementFunction} from './argument';
 
 export type CommandFilter = string | RegExp | ((value: string) => boolean | string);
 
-export interface ValueCommandSchema extends Data {
+export interface Parsable {
+    format: string;
+}
+
+export interface ValueCommandSchema extends Parsable, Data {
     id?: string;
     type: 'value';
     name: string;
     index?: number;
     indexedBy?: string | number;
-    dataType: string;
     inheritance?: boolean;
 }
 
-export interface ParamCommandSchema extends Data {
+export interface ParamCommandSchema extends Parsable, Data {
     id?: string;
     type: 'param';
     name: string;
     filters: CommandFilter | CommandFilter[];
-    dataType: string;
     inheritance?: boolean;
 }
 
