@@ -1,3 +1,4 @@
+import {importBy, parentDirname} from 'import-by';
 import {CommandAnalyser} from './analyser';
 import {CommandSchema} from './schema';
 
@@ -17,7 +18,14 @@ export class CommandExecutor {
         this.config = config;
     }
 
-    static of(config: CommandSchema): CommandExecutor {
+    /**
+     * Create a new instance of CommandExecutor
+     *
+     * @param config is a {@interface CommandSchema} or a reference string to {@interface CommandSchema}
+     */
+    static of(config: CommandSchema | string): CommandExecutor {
+        if (typeof config === 'string')
+            config = importBy(config, parentDirname(__filename)) as CommandSchema;
         return new CommandExecutor(config);
     }
 
@@ -27,11 +35,17 @@ export class CommandExecutor {
             process.exit(code);
     }
 
+    /**
+     * Should call process.exit when complete or error?
+     */
     public endWithExit(enable: boolean = true): CommandExecutor {
         this._exitCode = enable;
         return this;
     }
 
+    /**
+     * Minimum node version required to be runnable the command
+     */
     public checkNode(options: NodeCheckingOption): CommandExecutor {
         const [major, minor, micro]: any = process.versions.node.split('.');
 
@@ -56,6 +70,12 @@ export class CommandExecutor {
         return this;
     }
 
+    /**
+     * Execute the command
+     *
+     * @param argv is argument vector
+     * @param cwd is current working directory
+     */
     public execute(argv?: string[], cwd?: string) {
         if (this._exited) return;
 
