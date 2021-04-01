@@ -1,13 +1,6 @@
-import {
-    ArgumentError,
-    CommandArgument,
-    CommandArgumentError,
-    Data,
-    ExceptionHandler,
-    ImplementFunction,
-    TraceRoute
-} from './argument';
-import {CommandSchemaTypes, CommandFilter, CommandSchema, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {ArgumentError, CommandArgument, CommandArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
+import {CommandFilter, CommandSchema, CommandSchemaTypes, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {Util} from './util';
 
 export class CommandAnalyser {
     private readonly _argv: string[];
@@ -59,7 +52,7 @@ export class CommandAnalyser {
     }
 
     private setExceptionHandler(value: any) {
-        for (const v of this.toArray(value)) {
+        for (const v of Util.toArray(value)) {
             if (v instanceof Function || typeof v === 'function')
                 this._exhale.push(v);
         }
@@ -81,36 +74,26 @@ export class CommandAnalyser {
         this._args[key] = value;
     }
 
-    private toArray<T>(value: T | T[] | undefined | null): T[] {
-        if (value == null)
-            return [];
-        else if (value instanceof Array)
-            return value;
-        else return [value];
-    }
-
     private findFilter(
         arg: string,
         filters: CommandFilter | CommandFilter[],
         prefix: boolean = false): string | undefined {
         if (arg != null) {
-            filters = this.toArray<CommandFilter>(filters);
+            filters = Util.toArray<CommandFilter>(filters);
             for (const f of filters) {
                 if (typeof f === 'string') {
                     if (prefix ? arg.startsWith(f) : arg === f)
                         return f;
                 } else if (f instanceof RegExp) {
                     if (f.test(arg)) {
-                        const match = arg.match(f);
-                        if (match != null && match.length > 0)
-                            return match[0];
-                        return '';
+                        const match: any = arg.match(f);
+                        return Util.isNotBlank(match) ? match[0] : '';
                     }
                 } else if (f instanceof Function || typeof f === 'function') {
                     const value: any = f(arg);
                     if (typeof value === 'string')
                         return value;
-                    else if (value === true)
+                    if (value === true)
                         return '';
                 }
             }
