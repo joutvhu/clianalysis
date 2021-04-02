@@ -50,24 +50,4 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-
-#   publish-gpr:
-#     needs: build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: actions/setup-node@v1
-#         with:
-#           node-version: 12
-#           registry-url: https://npm.pkg.github.com/
-#           scope: '@joutvhu'
-#       - name: Download artifact
-#         uses: actions/download-artifact@v2
-#         with:
-#           name: lock-and-lib
-#       - name: Install packages
-#         run: npm ci
-#       - name: Publish package
-#         run: npm publish
-#         env:
-#           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - uses: joutvhu/delete-artifact@v1
