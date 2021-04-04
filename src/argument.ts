@@ -11,19 +11,10 @@ export type ImplementFunction = (args: CommandArgument) => void;
 /**
  * @return should call next handler
  */
-export type ExceptionHandler = (args: CommandArgumentError) => boolean;
+export type ExceptionHandler = (args: CommandError) => boolean;
 
 export interface Data {
     [key: string]: any;
-}
-
-export interface CommandArgument {
-    argv: string[];
-    cwd: string;
-    args: Data;
-    tasks: string[];
-    trace: TraceRoute[];
-    stack: CommandSchemaTypes[];
 }
 
 export interface ArgumentError {
@@ -31,6 +22,21 @@ export interface ArgumentError {
     argument: string;
 }
 
-export interface CommandArgumentError extends CommandArgument {
+export interface AbstractCommandArgument {
+    argv: string[];
+    cwd: string;
+    args: Data;
+    tasks: string[];
+    trace: TraceRoute[];
+    stack: CommandSchemaTypes[];
+
+    errors?: ArgumentError[];
+}
+
+export interface CommandArgument extends AbstractCommandArgument {
+    errors: undefined;
+}
+
+export interface CommandError extends AbstractCommandArgument {
     errors: ArgumentError[];
 }
