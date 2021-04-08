@@ -1,6 +1,6 @@
 import {importBy, parentDirname} from 'import-by';
 import {CommandAnalyser} from './analyser';
-import {ExceptionHandler} from './argument';
+import {CommandArgument, CommandError, ExceptionHandler} from './argument';
 import {CommandExtension, CommandSchema} from './schema';
 import {Util} from './util';
 
@@ -104,18 +104,17 @@ export class CommandExecutor {
 
         const analyser: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
         const success: boolean = analyser.analysis();
-        const args: any = analyser.arguments;
 
         (async () => {
             if (success) {
                 if (analyser.implementFunction != null) {
-                    const result: any = analyser.implementFunction(args);
+                    const result: any = analyser.implementFunction(analyser as CommandArgument);
                     if (result instanceof Promise) await result;
                 }
                 return 0;
             } else {
                 for (let i = analyser.exceptionHandlers.length - 1; i > -1; i--) {
-                    let result: any = analyser.exceptionHandlers[i](args);
+                    let result: any = analyser.exceptionHandlers[i](analyser as CommandError);
                     if (result instanceof Promise) result = await result;
                     if (!result) break;
                 }

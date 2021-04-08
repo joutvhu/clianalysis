@@ -1,8 +1,22 @@
-import {ArgumentError, CommandArgument, CommandArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
-import {CommandFilter, CommandSchema, CommandSchemaTypes, Parsable, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {
+    AbstractCommandArgument,
+    ArgumentError,
+    Data,
+    ExceptionHandler,
+    ImplementFunction,
+    TraceRoute
+} from './argument';
+import {
+    CommandFilter,
+    CommandSchema,
+    CommandSchemaTypes,
+    Parsable,
+    TaskChildrenSchema,
+    ValueCommandSchema
+} from './schema';
 import {Util} from './util';
 
-export class CommandAnalyser {
+export class CommandAnalyser implements AbstractCommandArgument {
     private readonly _argv: string[];
     private readonly _cwd: string;
     private readonly _stack: CommandSchemaTypes[] = [];
@@ -22,28 +36,40 @@ export class CommandAnalyser {
         this.setExceptionHandler(config.exception);
     }
 
+    get argv(): string[] {
+        return this._argv;
+    }
+
+    get cwd(): string {
+        return this._cwd;
+    }
+
+    get args(): Data {
+        return this._args;
+    }
+
+    get tasks(): string[] {
+        return this._tasks;
+    }
+
+    get trace(): TraceRoute[] {
+        return this._trace;
+    }
+
+    get stack(): CommandSchemaTypes[] {
+        return this._stack;
+    }
+
+    get errors(): ArgumentError[] | undefined {
+        return this._errors;
+    }
+
     public get implementFunction(): ImplementFunction | undefined {
         return this._impl;
     }
 
     public get exceptionHandlers(): ExceptionHandler[] {
         return this._exhale;
-    }
-
-    public get arguments(): CommandArgument | CommandArgumentError | any {
-        const result: any = {
-            argv: this._argv,
-            cwd: this._cwd,
-            args: this._args,
-            tasks: this._tasks,
-            stack: this._stack,
-            trace: this._trace
-        };
-
-        if (this._errors.length > 0)
-            result.errors = this._errors;
-
-        return result;
     }
 
     private setImplementFunction(value: any) {

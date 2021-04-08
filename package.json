@@ -1,6 +1,6 @@
 {
   "name": "clianalysis",
-  "version": "1.0.0-alpha.5",
+  "version": "1.0.0-alpha.6",
   "description": "Analysis, execute command line by configuration. Used for the design and development of CLI tools.",
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.json",
