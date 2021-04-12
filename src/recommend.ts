@@ -29,3 +29,23 @@ export const helper: CommandExtension = {
     ],
     exception: help
 };
+
+export const parser: CommandExtension = {
+    parser: (config, value) => {
+        switch (config.format) {
+            case 'boolean':
+                return value != null && value.length > 0 &&
+                    !['f', 'false', 'n', 'no', 'off', '0']
+                        .some(v => v === value.toLowerCase());
+            case 'int':
+            case 'integer':
+                return parseInt(value, 10);
+            case 'float':
+            case 'double':
+            case 'number':
+                return parseFloat(value);
+            default:
+                return value;
+        }
+    }
+};

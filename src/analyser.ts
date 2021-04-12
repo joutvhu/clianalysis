@@ -1,19 +1,5 @@
-import {
-    AbstractCommandArgument,
-    ArgumentError,
-    Data,
-    ExceptionHandler,
-    ImplementFunction,
-    TraceRoute
-} from './argument';
-import {
-    CommandFilter,
-    CommandSchema,
-    CommandSchemaTypes,
-    Parsable,
-    TaskChildrenSchema,
-    ValueCommandSchema
-} from './schema';
+import {AbstractCommandArgument, ArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
+import {CommandFilter, CommandSchema, CommandSchemaTypes, Parsable, TaskChildrenSchema, ValueCommandSchema} from './schema';
 import {Util} from './util';
 
 export class CommandAnalyser implements AbstractCommandArgument {
@@ -129,21 +115,10 @@ export class CommandAnalyser implements AbstractCommandArgument {
     }
 
     private parse(config: Parsable, value: string) {
-        switch (config.format) {
-            case 'boolean':
-                return value != null && value.length > 0 &&
-                    !['f', 'false', 'n', 'no', 'off', '0']
-                        .some(v => v === value.toLowerCase());
-            case 'int':
-            case 'integer':
-                return parseInt(value, 10);
-            case 'float':
-            case 'double':
-            case 'number':
-                return parseFloat(value);
-            default:
-                return value;
-        }
+        if (this._stack[0].parser instanceof Function ||
+            typeof this._stack[0].parser === 'function')
+            return this._stack[0].parser(config, value);
+        else return value;
     }
 
     private forEachChild(
