@@ -43,8 +43,10 @@ const parse: ArgumentParser = (config, value) => {
         case 'double':
         case 'number':
             return parseFloat(value);
-        default:
+        case 'string':
             return value;
+        default:
+            return undefined;
     }
 };
 

@@ -2,7 +2,7 @@ import {importBy, parentDirname} from 'import-by';
 import {CommandAnalyser} from './analyser';
 import {CommandArgument, CommandError, ExceptionHandler} from './argument';
 import {basic} from './recommend';
-import {CommandExtension, CommandExtensionLoader, CommandSchema} from './schema';
+import {ArgumentParser, CommandExtension, CommandExtensionLoader, CommandSchema} from './schema';
 import {Util} from './util';
 
 export interface NodeCheckingOption {
@@ -58,8 +58,12 @@ export class CommandExecutor {
             if (extension.children instanceof Array)
                 this.config.children?.push(...extension.children);
 
-            if (this.config.parser == null && (extension.parser instanceof Function || typeof extension.parser === 'function'))
-                this.config.parser = extension.parser;
+            if (Util.isNotBlank(extension.parser)) {
+                const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(extension.parser)
+                    .filter(parser => parser instanceof Function || typeof parser === 'function');
+                this.config.parser = Util.toArray<ArgumentParser>(this.config.parser);
+                this.config.parser.push(...parsers);
+            }
         }
     }
 

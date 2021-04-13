@@ -1,5 +1,13 @@
 import {AbstractCommandArgument, ArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
-import {CommandFilter, CommandSchema, CommandSchemaTypes, Parsable, TaskChildrenSchema, ValueCommandSchema} from './schema';
+import {
+    ArgumentParser,
+    CommandFilter,
+    CommandSchema,
+    CommandSchemaTypes,
+    Parsable,
+    TaskChildrenSchema,
+    ValueCommandSchema
+} from './schema';
 import {Util} from './util';
 
 export class CommandAnalyser implements AbstractCommandArgument {
@@ -115,10 +123,13 @@ export class CommandAnalyser implements AbstractCommandArgument {
     }
 
     private parse(config: Parsable, value: string) {
-        if (this._stack[0].parser instanceof Function ||
-            typeof this._stack[0].parser === 'function')
-            return this._stack[0].parser(config, value);
-        else return value;
+        const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(this._stack[0].parser);
+        for (const parser of parsers) {
+            const result = parser(config, value);
+            if (result !== undefined)
+                return result;
+        }
+        return value;
     }
 
     private forEachChild(
