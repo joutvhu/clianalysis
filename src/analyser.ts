@@ -1,12 +1,6 @@
+import {AbstractCommandArgument, ArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
 import {
-    AbstractCommandArgument,
-    ArgumentError,
-    Data,
-    ExceptionHandler,
-    ImplementFunction,
-    TraceRoute
-} from './argument';
-import {
+    ArgumentParser,
     CommandFilter,
     CommandSchema,
     CommandSchemaTypes,
@@ -129,21 +123,13 @@ export class CommandAnalyser implements AbstractCommandArgument {
     }
 
     private parse(config: Parsable, value: string) {
-        switch (config.format) {
-            case 'boolean':
-                return value != null && value.length > 0 &&
-                    !['f', 'false', 'n', 'no', 'off', '0']
-                        .some(v => v === value.toLowerCase());
-            case 'int':
-            case 'integer':
-                return parseInt(value, 10);
-            case 'float':
-            case 'double':
-            case 'number':
-                return parseFloat(value);
-            default:
-                return value;
+        const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(this._stack[0].parser);
+        for (const parser of parsers) {
+            const result = parser(config, value);
+            if (result !== undefined)
+                return result;
         }
+        return value;
     }
 
     private forEachChild(

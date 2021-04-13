@@ -1,7 +1,8 @@
 import {importBy, parentDirname} from 'import-by';
 import {CommandAnalyser} from './analyser';
 import {CommandArgument, CommandError, ExceptionHandler} from './argument';
-import {CommandExtension, CommandSchema} from './schema';
+import {basic} from './recommend';
+import {ArgumentParser, CommandExtension, CommandExtensionLoader, CommandSchema} from './schema';
 import {Util} from './util';
 
 export interface NodeCheckingOption {
@@ -32,9 +33,16 @@ export class CommandExecutor {
         return new CommandExecutor(config);
     }
 
+    private getExtension(): CommandExtensionLoader[] {
+        if (this.config.extends instanceof Array && this.config.extends.length > 0)
+            return this.config.extends;
+        else return [basic];
+    }
+
     private mergeConfiguration() {
-        if (!(this.config.extends instanceof Array)) return;
-        for (const ex of this.config.extends) {
+        const extensions: CommandExtensionLoader[] = this.getExtension();
+
+        for (const ex of extensions) {
             const extension: CommandExtension = ex instanceof Function || typeof ex === 'function' ? ex() : ex;
             if (Util.isBlank(extension) || Util.isBlank(this.config)) break;
 
@@ -49,6 +57,13 @@ export class CommandExecutor {
 
             if (extension.children instanceof Array)
                 this.config.children?.push(...extension.children);
+
+            if (Util.isNotBlank(extension.parser)) {
+                const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(extension.parser)
+                    .filter(parser => parser instanceof Function || typeof parser === 'function');
+                this.config.parser = Util.toArray<ArgumentParser>(this.config.parser);
+                this.config.parser.push(...parsers);
+            }
         }
     }
 

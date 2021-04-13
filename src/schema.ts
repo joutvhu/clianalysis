@@ -54,8 +54,11 @@ export interface TaskCommandSchema extends Data {
     exception?: ExceptionHandler[] | ExceptionHandler;
 }
 
+export type ArgumentParser = (config: Parsable, value: string) => any;
+
 export interface CommandExtension {
     children?: TaskChildrenSchema[];
+    parser?: ArgumentParser[] | ArgumentParser;
     execute?: ImplementFunction;
     exception?: ExceptionHandler[] | ExceptionHandler;
 }
@@ -66,6 +69,7 @@ export interface CommandSchema extends Data {
     name?: string;
     extends?: CommandExtensionLoader[];
     children?: TaskChildrenSchema[];
+    parser?: ArgumentParser[] | ArgumentParser;
     execute?: ImplementFunction;
     exception?: ExceptionHandler[] | ExceptionHandler;
 }
