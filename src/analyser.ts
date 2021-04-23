@@ -1,33 +1,35 @@
-import {AbstractCommandArgument, ArgumentError, Data, ExceptionHandler, ImplementFunction, TraceRoute} from './argument';
-import {
-    ArgumentParser,
-    CommandFilter,
-    CommandSchema,
-    CommandSchemaTypes,
-    Parsable,
-    TaskChildrenSchema,
-    ValueCommandSchema
-} from './schema';
+import {AbstractCommandArgument, ArgumentError, ArgumentStack, ArgumentTrace, CommandMethod, Data} from './argument';
+import {ArgumentParser, CommandFilter, CommandSchema, CommandType, Parsable} from './schema';
 import {Util} from './util';
 
 export class CommandAnalyser implements AbstractCommandArgument {
     private readonly _argv: string[];
     private readonly _cwd: string;
-    private readonly _stack: CommandSchemaTypes[] = [];
-
-    private _tasks: string[] = [];
-    private _trace: TraceRoute[] = [];
-    private _args: Data = {};
-    private _errors: ArgumentError[] = [];
-    private _impl?: ImplementFunction;
-    private _exhale: ExceptionHandler[] = [];
+    private readonly _stack: ArgumentStack;
+    private readonly _trace: ArgumentTrace;
+    private readonly _method: CommandMethod;
+    private readonly _args: Data = {};
+    private readonly _errors: ArgumentError[] = [];
 
     constructor(config: CommandSchema, argv?: string[], cwd?: string) {
         this._argv = argv != null ? argv : process.argv.slice(2);
         this._cwd = cwd != null ? cwd : process.cwd();
-        this._stack = [config];
-        this.setImplementFunction(config.execute);
-        this.setExceptionHandler(config.exception);
+
+        this._args = {};
+        this._errors = [];
+
+        this._trace = new ArgumentTrace();
+        this._trace.setArguments(this._argv);
+        this._stack = new ArgumentStack();
+        this._stack.add(config);
+
+        this._method = new CommandMethod();
+        this._method.implementation = config.execute;
+        this._method.addExceptionHandler(config.exception);
+    }
+
+    get config(): CommandSchema {
+        return this._stack.stack[0];
     }
 
     get argv(): string[] {
@@ -43,14 +45,14 @@ export class CommandAnalyser implements AbstractCommandArgument {
     }
 
     get tasks(): string[] {
-        return this._tasks;
+        return this._stack.tasks;
     }
 
-    get trace(): TraceRoute[] {
+    get trace(): ArgumentTrace {
         return this._trace;
     }
 
-    get stack(): CommandSchemaTypes[] {
+    get stack(): ArgumentStack {
         return this._stack;
     }
 
@@ -58,31 +60,15 @@ export class CommandAnalyser implements AbstractCommandArgument {
         return this._errors;
     }
 
-    public get implementFunction(): ImplementFunction | undefined {
-        return this._impl;
+    get method(): CommandMethod {
+        return this._method;
     }
 
-    public get exceptionHandlers(): ExceptionHandler[] {
-        return this._exhale;
-    }
-
-    private setImplementFunction(value: any) {
-        if (value instanceof Function || typeof value === 'function')
-            this._impl = value;
-    }
-
-    private setExceptionHandler(value: any) {
-        for (const v of Util.toArray(value)) {
-            if (v instanceof Function || typeof v === 'function')
-                this._exhale.push(v);
-        }
-    }
-
-    private traceArguments(config: any) {
-        this._trace.push({
-            id: config.id,
-            type: config.type,
-            name: config.name
+    private updateTrace(index: number, config: any) {
+        this._trace.update(index, node => {
+            node.id = config.id;
+            node.type = config.type;
+            node.name = config.name;
         });
     }
 
@@ -123,7 +109,7 @@ export class CommandAnalyser implements AbstractCommandArgument {
     }
 
     private parse(config: Parsable, value: string) {
-        const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(this._stack[0].parser);
+        const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(this.config.parser);
         for (const parser of parsers) {
             const result = parser(config, value);
             if (result !== undefined)
@@ -132,112 +118,53 @@ export class CommandAnalyser implements AbstractCommandArgument {
         return value;
     }
 
-    private forEachChild(
-        callback: (child: TaskChildrenSchema) => any,
-        notfound?: () => void
-    ): boolean | undefined {
-        let lastTask = null;
-        const max = this._stack.length - 1;
-        for (let i = max; i > -1; i--) {
-            const config: any = this._stack[i];
-            if (lastTask == null && (i === 0 || config.type === 'task')) lastTask = i;
-            if (config['children'] instanceof Array) {
-                for (const child of config['children']) {
-                    if (i < max && (child.type === 'task' || child.inheritance !== true))
-                        continue;
-                    const status = callback(child);
-                    if (status) {
-                        if (status.adding != null && (lastTask == null || i === lastTask)) {
-                            if (status.overwrite)
-                                this._stack.splice(i + 1, max - i, status.adding);
-                            else if (i === max)
-                                this._stack.push(status.adding);
-                        }
-                        if (status.action === 'break')
-                            return true;
-                    }
-                }
-            }
-        }
-
-        if (notfound != null) {
-            notfound();
-            return false;
-        }
-        return undefined;
-    }
-
-    private checkIndex(child: ValueCommandSchema, index: number): boolean {
-        if (typeof child.index === 'number') {
-            if (child.indexedBy != null) {
-                for (let i = this._trace.length; i > 0; i--) {
-                    const t: TraceRoute = this._trace[i - 1];
-                    if (t.id === child.indexedBy || (t.id == null && t.name === child.indexedBy))
-                        return child.index === index - i;
-                }
-            } else return child.index === index;
-        }
-        return false;
-    }
-
     public analysis(): boolean {
-        const len = this._argv.length;
-        let index = 0;
-
-        while (index < len) {
+        for (let index = 0, len = this._argv.length; index < len; index++) {
             const arg: string = this._argv[index];
-            index++;
 
-            const action = this.forEachChild(child => {
-                if (child.type === 'value') {
-                    if (this.checkIndex(child, index) || child.index == null && !this.hasValue(child.name)) {
+            this._stack.forEach((tree, child, root) => {
+                let found = false;
+                if (child.type === CommandType.VALUE) {
+                    if (this._trace.checkIndex(index, child.index, child.indexedBy) ||
+                        child.index == null && !this.hasValue(child.name)) {
                         this.setArgument(child.name, this.parse(child, arg));
-                        this.traceArguments(child);
-                        return {
-                            action: 'break'
-                        };
+                        found = true;
                     }
                 } else {
-                    const filter = this.findFilter(arg, child.filters, child.type === 'param');
+                    const filter = this.findFilter(arg, child.filters, child.type === CommandType.PARAM);
 
                     if (filter != null) {
-                        if (child.type === 'param') {
+                        if (child.type === CommandType.PARAM) {
                             this.setArgument(child.name, this.parse(child, arg.slice(filter.length)));
-                            this.traceArguments(child);
-                            return {
-                                action: 'break'
-                            };
-                        } else if (['task', 'flag', 'group'].includes(child.type)) {
-                            if (child.type === 'task') {
-                                this._tasks.push(child.name);
-                                this.setImplementFunction(child.execute);
-                                this.setExceptionHandler(child.exception);
-                            } else if (child.type === 'flag') {
+                            found = true;
+                        } else if ([CommandType.TASK, CommandType.FLAG, CommandType.GROUP].includes(child.type)) {
+                            if (child.type === CommandType.TASK) {
+                                this._method.implementation = child.execute;
+                                this._method.addExceptionHandler(child.exception);
+                                if (root)
+                                    this._stack.add(child);
+                                else
+                                    tree.add(child);
+                            } else if (child.type === CommandType.FLAG) {
                                 if (child.name.startsWith('!'))
                                     this.setArgument(child.name.slice(1), false);
                                 else
                                     this.setArgument(child.name, true);
-                            }
-                            this.traceArguments(child);
-
-                            return {
-                                action: 'break',
-                                overwrite: child.type !== 'task',
-                                adding: child.children instanceof Array ? child : undefined
-                            };
+                                tree.add(child);
+                            } else tree.add(child);
+                            found = true;
                         }
                     }
                 }
 
-                return undefined;
-            }, () => this._errors.push({
-                index,
-                argument: arg
-            }));
-
-            if (action === false)
-                return false;
+                if (found) {
+                    this.updateTrace(index, child);
+                    return true;
+                } else return false;
+            });
         }
+
+        // TODO: validate missing arguments
 
         return true;
     }

@@ -122,14 +122,14 @@ export class CommandExecutor {
 
         (async () => {
             if (success) {
-                if (analyser.implementFunction != null) {
-                    const result: any = analyser.implementFunction(analyser as CommandArgument);
+                if (analyser.method.implementation != null) {
+                    const result: any = analyser.method.implementation(analyser as CommandArgument);
                     if (result instanceof Promise) await result;
                 }
                 return 0;
             } else {
-                for (let i = analyser.exceptionHandlers.length - 1; i > -1; i--) {
-                    let result: any = analyser.exceptionHandlers[i](analyser as CommandError);
+                for (let i = analyser.method.exceptionHandlers.length - 1; i > -1; i--) {
+                    let result: any = analyser.method.exceptionHandlers[i](analyser as CommandError);
                     if (result instanceof Promise) result = await result;
                     if (!result) break;
                 }

@@ -1,9 +1,9 @@
 import {AbstractCommandArgument} from './argument';
-import {ArgumentParser, CommandExtension} from './schema';
+import {ArgumentParser, CommandExtension, CommandType} from './schema';
 
 function help(args: AbstractCommandArgument) {
-    for (let i = args.stack.length - 1; i > -1; i--) {
-        const stack = args.stack[i];
+    for (let i = args.stack.stack.length - 1; i > -1; i--) {
+        const stack = args.stack.stack[i].node;
         if (i === 0 || stack.type == null || stack.type === 'task') {
             const help = stack.help;
             if (typeof help === 'string')
@@ -22,7 +22,7 @@ export const helper: CommandExtension = {
     children: [
         {
             name: 'help',
-            type: 'task',
+            type: CommandType.TASK,
             filters: ['--help', '-h'],
             execute: help
         }
@@ -58,7 +58,7 @@ export const basic: CommandExtension = {
     children: [
         {
             name: 'help',
-            type: 'task',
+            type: CommandType.TASK,
             filters: ['--help', '-h'],
             execute: help
         }
