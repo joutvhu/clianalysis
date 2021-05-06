@@ -1,24 +1,23 @@
+import {basic} from '../src/recommend';
 import {CommandExecutor} from '../src';
-import {helper} from '../src/recommend';
+import {CommandType} from '../src/schema';
 
 describe('Recommended', () => {
     test('call helper extension', () => {
         jest.spyOn(global.console, 'log');
 
         CommandExecutor
-            .of({
-                extends: [
-                    helper
-                ],
+            .use(basic)
+            .config({
                 name: 'unit-test',
                 children: [
                     {
-                        type: 'task',
+                        type: CommandType.TASK,
                         name: 'test',
                         filters: ['test', 't'],
                         children: [
                             {
-                                type: 'flag',
+                                type: CommandType.FLAG,
                                 name: 'local',
                                 filters: ['--local', '-l']
                             }

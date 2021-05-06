@@ -1,4 +1,6 @@
 import {CommandExecutor} from '../src/executor';
+import {basic} from '../src/recommend';
+import {CommandType} from '../src/schema';
 
 describe('CommandExecutor', () => {
     test('call exception handlers', () => {
@@ -7,16 +9,17 @@ describe('CommandExecutor', () => {
         });
 
         CommandExecutor
-            .of({
+            .use(basic)
+            .config({
                 name: 'unit-test',
                 children: [
                     {
-                        type: 'task',
+                        type: CommandType.TASK,
                         name: 'test',
                         filters: ['test', 't'],
                         children: [
                             {
-                                type: 'flag',
+                                type: CommandType.FLAG,
                                 name: 'local',
                                 filters: ['--local', '-l']
                             }

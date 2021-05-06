@@ -1,4 +1,6 @@
 import {CommandExecutor} from '../src';
+import {basic} from '../src/recommend';
+import {CommandType} from '../src/schema';
 
 describe('Index', () => {
     test('call implement function', () => {
@@ -7,26 +9,27 @@ describe('Index', () => {
         });
 
         CommandExecutor
-            .of({
+            .use(basic)
+            .config({
                 name: 'unit-test',
                 children: [
                     {
-                        type: 'task',
+                        type: CommandType.TASK,
                         name: 'test',
                         filters: ['test', 't'],
                         children: [
                             {
-                                type: 'flag',
+                                type: CommandType.FLAG,
                                 name: 'local',
                                 filters: ['--local', '-l']
                             },
                             {
-                                type: 'flag',
+                                type: CommandType.FLAG,
                                 name: '!v2',
                                 filters: ['--v2']
                             },
                             {
-                                type: 'param',
+                                type: CommandType.PARAM,
                                 name: 'name',
                                 filters: ['--name=', '-n='],
                                 format: 'string'
@@ -50,22 +53,23 @@ describe('Index', () => {
         });
 
         CommandExecutor
-            .of({
+            .use(basic)
+            .config({
                 name: 'unit-test',
                 children: [
                     {
-                        type: 'task',
+                        type: CommandType.TASK,
                         name: 'test',
                         filters: ['test', 't'],
                         children: [
                             {
-                                type: 'param',
+                                type: CommandType.PARAM,
                                 name: 'amount',
                                 filters: ['--amount=', '-a='],
                                 format: 'integer'
                             },
                             {
-                                type: 'value',
+                                type: CommandType.VALUE,
                                 name: 'position',
                                 format: 'number'
                             }
@@ -86,26 +90,27 @@ describe('Index', () => {
         });
 
         CommandExecutor
-            .of({
+            .use(basic)
+            .config({
                 name: 'unit-test',
                 children: [
                     {
-                        type: 'task',
+                        type: CommandType.TASK,
                         name: 'test',
                         filters: ['test', 't'],
                         children: [
                             {
-                                type: 'value',
+                                type: CommandType.VALUE,
                                 name: 'v1',
                                 format: 'boolean'
                             },
                             {
-                                type: 'value',
+                                type: CommandType.VALUE,
                                 name: 'v2',
                                 format: 'boolean'
                             },
                             {
-                                type: 'value',
+                                type: CommandType.VALUE,
                                 name: 'v3',
                                 format: 'boolean'
                             }

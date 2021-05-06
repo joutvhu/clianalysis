@@ -1,4 +1,5 @@
-import {CommandSchemaTypes, CommandType, SingleOrList, TaskChildrenSchema} from './schema';
+import {Data, SingleOrList} from './basic';
+import {ChildCommandTypes, CommandType, CommandTypes} from './schema';
 import {Util} from './util';
 
 export type ImplementFunction = (args: CommandArgument) => void;
@@ -7,10 +8,6 @@ export type ImplementFunction = (args: CommandArgument) => void;
  * @return should call next handler
  */
 export type ExceptionHandler = (args: CommandError) => boolean;
-
-export interface Data {
-    [key: string]: any;
-}
 
 export interface ArgumentError {
     index: number;
@@ -37,15 +34,15 @@ export interface CommandError extends AbstractCommandArgument {
 }
 
 export class ArgumentTree {
-    private readonly _node: CommandSchemaTypes;
+    private readonly _node: CommandTypes;
     private readonly _optional: ArgumentTree[];
 
-    constructor(node: CommandSchemaTypes) {
+    constructor(node: CommandTypes) {
         this._node = node;
         this._optional = [];
     }
 
-    get node(): CommandSchemaTypes {
+    get node(): CommandTypes {
         return this._node;
     }
 
@@ -53,14 +50,14 @@ export class ArgumentTree {
         return this._optional;
     }
 
-    public add(node: CommandSchemaTypes) {
+    public add(node: CommandTypes) {
         this._optional.push(new ArgumentTree(node));
     }
 
     public forEach(
         callback: (
             tree: ArgumentTree,
-            child: TaskChildrenSchema,
+            child: ChildCommandTypes,
             root: boolean
         ) => boolean | undefined,
         root: boolean = true
@@ -100,8 +97,8 @@ export class ArgumentStack {
     }
 
     public add(node: ArgumentTree): void;
-    public add(node: CommandSchemaTypes): void;
-    public add(node: ArgumentTree | CommandSchemaTypes): void {
+    public add(node: CommandTypes): void;
+    public add(node: ArgumentTree | CommandTypes): void {
         if (node instanceof ArgumentTree)
             this._stack.push(node);
         else this._stack.push(new ArgumentTree(node));
@@ -109,7 +106,7 @@ export class ArgumentStack {
 
     public forEach(callback: (
         tree: ArgumentTree,
-        child: TaskChildrenSchema,
+        child: ChildCommandTypes,
         root: boolean
     ) => boolean | undefined): boolean {
         for (let i = this._stack.length - 1; i >= 0; i--) {

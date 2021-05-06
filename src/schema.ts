@@ -1,8 +1,7 @@
-import {Data, ExceptionHandler, ImplementFunction} from './argument';
+import {ExceptionHandler, ImplementFunction} from './argument';
+import {Data, SingleOrList} from './basic';
 
 export type CommandFilter = string | RegExp | ((value: string) => boolean | string);
-
-export type SingleOrList<T> = T[] | T;
 
 export interface Parsable {
     format: string;
@@ -16,7 +15,7 @@ export enum CommandType {
     VALUE = 'value'
 }
 
-export interface ValueCommandSchema extends Parsable, Data {
+export interface ValueCommandArgumentSchema extends Parsable, Data {
     id?: string;
     type: CommandType.VALUE;
     name: string;
@@ -25,7 +24,7 @@ export interface ValueCommandSchema extends Parsable, Data {
     inheritance?: boolean;
 }
 
-export interface ParamCommandSchema extends Parsable, Data {
+export interface ParamCommandArgumentSchema extends Parsable, Data {
     id?: string;
     type: CommandType.PARAM;
     name: string;
@@ -33,55 +32,69 @@ export interface ParamCommandSchema extends Parsable, Data {
     inheritance?: boolean;
 }
 
-export type GroupChildrenSchema = FlagCommandSchema | GroupCommandSchema | ParamCommandSchema | ValueCommandSchema;
-
-export interface FlagCommandSchema extends Data {
+export interface FlagCommandArgumentSchema extends Data {
     id?: string;
     type: CommandType.FLAG;
     name: string;
     filters: SingleOrList<CommandFilter>;
-    children?: GroupChildrenSchema[];
+    children?: ChildCommandArgumentTypes[];
     inheritance?: boolean;
 }
 
-export interface GroupCommandSchema extends Data {
+export interface GroupCommandArgumentSchema extends Data {
     id?: string;
     type: CommandType.GROUP;
     filters: SingleOrList<CommandFilter>;
-    children: GroupChildrenSchema[];
+    children: ChildCommandArgumentTypes[];
     inheritance?: boolean;
 }
 
-export type TaskChildrenSchema = TaskCommandSchema | GroupChildrenSchema;
+export type ChildCommandArgumentTypes =
+    FlagCommandArgumentSchema |
+    GroupCommandArgumentSchema |
+    ParamCommandArgumentSchema |
+    ValueCommandArgumentSchema;
 
-export interface TaskCommandSchema extends Data {
+export type ChildCommandTypes =
+    ChildCommandArgumentTypes |
+    SubCommandSchema;
+
+export type CommandTypes =
+    ChildCommandTypes |
+    CommandSchema;
+
+export interface CommandSchema extends Data {
     id?: string;
+    name?: string;
+    children?: ChildCommandTypes[];
+    execute?: ImplementFunction;
+    exception?: SingleOrList<ExceptionHandler>;
+}
+
+export interface SubCommandSchema extends CommandSchema {
     type: CommandType.TASK;
     name: string;
     filters: SingleOrList<CommandFilter>;
-    children?: TaskChildrenSchema[];
-    execute?: ImplementFunction;
-    exception?: SingleOrList<ExceptionHandler>;
 }
 
 export type ArgumentParser = (config: Parsable, value: string) => any;
 
 export interface CommandExtension {
-    children?: TaskChildrenSchema[];
+    children?: ChildCommandTypes[];
     parser?: SingleOrList<ArgumentParser>;
     execute?: ImplementFunction;
     exception?: SingleOrList<ExceptionHandler>;
 }
 
-export type CommandExtensionLoader = CommandExtension | (() => CommandExtension);
-
-export interface CommandSchema extends Data {
-    name?: string;
-    extends?: CommandExtensionLoader[];
-    children?: TaskChildrenSchema[];
-    parser?: SingleOrList<ArgumentParser>;
-    execute?: ImplementFunction;
-    exception?: SingleOrList<ExceptionHandler>;
-}
-
-export type CommandSchemaTypes = CommandSchema | TaskChildrenSchema;
+// export type CommandExtensionLoader = CommandExtension | (() => CommandExtension);
+//
+// export interface CommandSchema extends Data {
+//     name?: string;
+//     extends?: CommandExtensionLoader[];
+//     children?: TaskChildrenSchema[];
+//     parser?: SingleOrList<ArgumentParser>;
+//     execute?: ImplementFunction;
+//     exception?: SingleOrList<ExceptionHandler>;
+// }
+//
+// export type CommandSchemaTypes = CommandSchema | TaskChildrenSchema;

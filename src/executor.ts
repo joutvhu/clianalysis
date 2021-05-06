@@ -1,8 +1,8 @@
 import {importBy, parentDirname} from 'import-by';
 import {CommandAnalyser} from './analyser';
 import {CommandArgument, CommandError, ExceptionHandler} from './argument';
-import {basic} from './recommend';
-import {ArgumentParser, CommandExtension, CommandExtensionLoader, CommandSchema} from './schema';
+import {provide, Provider} from './basic';
+import {ArgumentParser, CommandExtension, CommandSchema} from './schema';
 import {Util} from './util';
 
 export interface NodeCheckingOption {
@@ -12,100 +12,15 @@ export interface NodeCheckingOption {
     toolName?: string;
 }
 
-export class CommandExecutor {
-    private readonly config: CommandSchema = {};
-    private _exited = false;
-    private _exitCode = false;
+export class Executable {
+    private readonly config: CommandSchema;
+    private readonly beforeExecute: () => boolean;
+    private readonly afterExecute: (status: number) => void;
 
-    constructor(config: CommandSchema) {
+    constructor(config: CommandSchema, beforeExecute: () => boolean, afterExecute: (status: number) => void) {
         this.config = config;
-        this.mergeConfiguration();
-    }
-
-    /**
-     * Create a new instance of CommandExecutor
-     *
-     * @param config is a {@interface CommandSchema} or a reference string to {@interface CommandSchema}
-     */
-    static of(config: CommandSchema | string): CommandExecutor {
-        if (typeof config === 'string')
-            config = importBy(config, parentDirname(__filename)) as CommandSchema;
-        return new CommandExecutor(config);
-    }
-
-    private getExtension(): CommandExtensionLoader[] {
-        if (this.config.extends instanceof Array && this.config.extends.length > 0)
-            return this.config.extends;
-        else return [basic];
-    }
-
-    private mergeConfiguration() {
-        const extensions: CommandExtensionLoader[] = this.getExtension();
-
-        for (const ex of extensions) {
-            const extension: CommandExtension = ex instanceof Function || typeof ex === 'function' ? ex() : ex;
-            if (Util.isBlank(extension) || Util.isBlank(this.config)) break;
-
-            if (Util.isNotBlank(extension.exception)) {
-                const exception = Util.toArray<ExceptionHandler>(extension.exception);
-                this.config.exception = Util.toArray<ExceptionHandler>(this.config.exception);
-                this.config.exception.push(...exception);
-            }
-
-            if (Util.isNotBlank(extension.execute) && Util.isBlank(this.config.execute))
-                this.config.execute = extension.execute;
-
-            if (extension.children instanceof Array)
-                this.config.children?.push(...extension.children);
-
-            if (Util.isNotBlank(extension.parser)) {
-                const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(extension.parser)
-                    .filter(parser => parser instanceof Function || typeof parser === 'function');
-                this.config.parser = Util.toArray<ArgumentParser>(this.config.parser);
-                this.config.parser.push(...parsers);
-            }
-        }
-    }
-
-    private exit(code?: number): void {
-        this._exited = true;
-        if (this._exitCode)
-            process.exit(code);
-    }
-
-    /**
-     * Should call process.exit when complete or error?
-     */
-    public endWithExit(enable: boolean = true): CommandExecutor {
-        this._exitCode = enable;
-        return this;
-    }
-
-    /**
-     * Minimum node version required to be runnable the command
-     */
-    public checkNode(options: NodeCheckingOption): CommandExecutor {
-        const [major, minor, micro]: any = process.versions.node.split('.');
-
-        if (options != null && options.minMajor != null && major < options.minMajor && (
-            options.minMinor == null || (major == options.minMajor && minor < options.minMinor && (
-            options.minMicro == null || (minor == options.minMinor && micro < options.minMicro))))) {
-            const toolName = options.toolName != null ? options.toolName : this.config.name;
-            const version = `v${
-                options.minMajor
-            }.${
-                options.minMinor != null ? options.minMinor : '0'
-            }.${
-                options.minMicro != null ? options.minMicro : '0'
-            }`;
-
-            console.error(
-                `ERROR: This version of ${toolName} requires at least Node.js ${version}` +
-                `The current version of Node.js is ${process.version}`);
-            this.exit(1);
-        }
-
-        return this;
+        this.beforeExecute = beforeExecute;
+        this.afterExecute = afterExecute;
     }
 
     /**
@@ -115,7 +30,8 @@ export class CommandExecutor {
      * @param cwd is current working directory
      */
     public execute(argv?: string[], cwd?: string) {
-        if (this._exited) return;
+        if (typeof this.beforeExecute === 'function' && !this.beforeExecute())
+            return;
 
         const analyser: CommandAnalyser = new CommandAnalyser(this.config, argv, cwd);
         const success: boolean = analyser.analysis();
@@ -136,7 +52,107 @@ export class CommandExecutor {
                 return 1;
             }
         })().then(value => {
-            this.exit(value);
+            if (typeof this.afterExecute === 'function')
+                this.afterExecute(value);
         });
+    }
+}
+
+export class CommandExecutor {
+    private readonly extension: CommandExtension;
+    private _exited = false;
+    private _shouldExit = false;
+    private _node?: NodeCheckingOption = undefined;
+
+    constructor(extension: CommandExtension) {
+        this.extension = extension;
+    }
+
+    static use(extension: Provider<CommandExtension>): CommandExecutor {
+        return new CommandExecutor(provide(extension) || {});
+    }
+
+    /**
+     * Should call process.exit when complete or error?
+     */
+    public exit(enable: boolean = true): CommandExecutor {
+        this._shouldExit = enable;
+        return this;
+    }
+
+    /**
+     * Minimum node version required to be runnable the command
+     */
+    public node(options: NodeCheckingOption): CommandExecutor {
+        this._node = options;
+        return this;
+    }
+
+    public config(config: CommandSchema | string): Executable {
+        if (typeof config === 'string')
+            config = importBy(config, parentDirname(__filename)) as CommandSchema;
+
+        const shouldExit = (code?: number) => {
+            this._exited = true;
+            if (this._shouldExit)
+                process.exit(code);
+        };
+
+        if (typeof config !== 'object') {
+            console.error('The command configuration is invalid.');
+            shouldExit(2);
+        }
+
+        const shouldExecute = () => {
+            if (this._exited) return false;
+            if (this._node == null) return true;
+
+            const [major, minor, micro]: any = process.versions.node.split('.');
+
+            if (this._node != null && this._node.minMajor != null && major < this._node.minMajor && (
+                this._node.minMinor == null || (major == this._node.minMajor && minor < this._node.minMinor && (
+                this._node.minMicro == null || (minor == this._node.minMinor && micro < this._node.minMicro))))) {
+                const toolName = this._node.toolName != null ? this._node.toolName : this.config.name;
+                const version = `v${
+                    this._node.minMajor
+                }.${
+                    this._node.minMinor != null ? this._node.minMinor : '0'
+                }.${
+                    this._node.minMicro != null ? this._node.minMicro : '0'
+                }`;
+
+                console.error(
+                    `ERROR: This version of ${toolName} requires at least Node.js ${version}` +
+                    `The current version of Node.js is ${process.version}`);
+                shouldExit(2);
+                return false;
+            }
+
+            return true;
+        };
+
+        // Merge configuration with extension
+        if (Util.isNotBlank(this.extension)) {
+            if (Util.isNotBlank(this.extension.exception)) {
+                const exception = Util.toArray<ExceptionHandler>(this.extension.exception);
+                config.exception = Util.toArray<ExceptionHandler>(config.exception);
+                config.exception.push(...exception);
+            }
+
+            if (Util.isNotBlank(this.extension.execute) && Util.isBlank(config.execute))
+                config.execute = this.extension.execute;
+
+            if (this.extension.children instanceof Array)
+                config.children?.push(...this.extension.children);
+
+            if (Util.isNotBlank(this.extension.parser)) {
+                const parsers: ArgumentParser[] = Util.toArray<ArgumentParser>(this.extension.parser)
+                    .filter(parser => parser instanceof Function || typeof parser === 'function');
+                config.parser = Util.toArray<ArgumentParser>(config.parser);
+                config.parser.push(...parsers);
+            }
+        }
+
+        return new Executable(config, shouldExecute, shouldExit);
     }
 }

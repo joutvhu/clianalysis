@@ -1,4 +1,5 @@
-import {AbstractCommandArgument, ArgumentError, ArgumentStack, ArgumentTrace, CommandMethod, Data} from './argument';
+import {AbstractCommandArgument, ArgumentError, ArgumentStack, ArgumentTrace, CommandMethod} from './argument';
+import {Data} from './basic';
 import {ArgumentParser, CommandFilter, CommandSchema, CommandType, Parsable} from './schema';
 import {Util} from './util';
 
@@ -29,7 +30,7 @@ export class CommandAnalyser implements AbstractCommandArgument {
     }
 
     get config(): CommandSchema {
-        return this._stack.stack[0];
+        return this._stack.stack[0].node as CommandSchema;
     }
 
     get argv(): string[] {
@@ -138,7 +139,7 @@ export class CommandAnalyser implements AbstractCommandArgument {
                             this.setArgument(child.name, this.parse(child, arg.slice(filter.length)));
                             found = true;
                         } else if ([CommandType.TASK, CommandType.FLAG, CommandType.GROUP].includes(child.type)) {
-                            if (child.type === CommandType.TASK) {
+                            if (child.type == null || child.type === CommandType.TASK) {
                                 this._method.implementation = child.execute;
                                 this._method.addExceptionHandler(child.exception);
                                 if (root)
